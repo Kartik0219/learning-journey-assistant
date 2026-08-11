@@ -36,18 +36,29 @@ The core technical challenges are reliably mapping rubric criteria to learning o
 
 ## 3. Constraints, Risks and Limitations
 
-### 3.1 Constraints and Assumptions
+### 3.1 Constraints
 
-Constraints include reliance on Moodle data access and permissions, handling of personally identifiable student information, and the tooling and hosting available to the team within the subject timeframe. It is assumed that subject rubrics and grade data are available in a structured, machine-readable format, and that the system will never write back to or alter official grades.
+The project depends on subject descriptions, rubrics, and grade results being available from Moodle, or an equivalent export, in a structured, machine-readable format; where direct API access is not available the team will work from exported or sample data instead. The system must never write back to, or alter, official grades or rubric records held in Moodle, since it is intended only as a read-only, formative layer on top of existing academic data. Any student performance data used must be handled in line with the university's data protection obligations, and access to a student's own mastery dashboard must remain private to that student. The project must also be scoped and delivered within the CSE5IDP subject timeline, with Assessment 2 due 23 August 2026 and Assessment 3 due 18 October 2026, using a small student team working part-time alongside other study commitments. Finally, the team is limited to free-tier, student-licensed, or otherwise low or no-cost tooling and hosting, as the project has no external funding.
 
-### 3.2 Risks and Limitations
+### 3.2 Assumptions
+
+It is assumed that subject rubrics and grade data can be obtained in a structured format, such as exported CSV or JSON, that is sufficient for mapping rubric criteria to learning outcomes. It is also assumed that the AI components used for feedback and quiz generation can be grounded in rubric and subject content closely enough to avoid hallucinated or misleading feedback, and that team members will have ongoing access to the shared GitHub repository and Jira board for the duration of the project. The scope delivered for Assessment 2 and 3 is assumed to be a proof-of-concept rather than a production-ready system handling a full cohort's live data.
+
+### 3.3 Risks
 
 | Risk | Likelihood | Impact | Mitigation |
 | --- | --- | --- | --- |
 | AI-generated feedback is inaccurate or hallucinated | Medium | High | Guardrails, rubric-grounded prompts, and human-reviewable output |
 | Student data privacy is compromised | Low | High | Data minimisation, access controls, no third-party data sharing |
-| Integration with Moodle data is delayed or restricted | Medium | Medium | Use sample/exported data as a fallback during development |
-| Team time constraints affect delivery | Medium | Medium | Incremental scope, prioritise core mastery dashboard first |
+| Integration with Moodle data is delayed or restricted | Medium | Medium | Use sample or exported data as a fallback during development |
+| Team time constraints affect delivery | Medium | Medium | Incremental scope, prioritise the core mastery dashboard first |
+| Scope creep beyond what can be delivered in the subject timeframe | Medium | Medium | Fix a minimum viable feature set early; treat roadmap items such as longitudinal tracking and employability mapping as out of scope for this subject |
+| Uneven contribution or availability across team members | Low | Medium | Clear task ownership in Jira, regular check-ins, sprint goals tied to due dates |
+| Dependence on a single AI or API provider (cost, downtime, or policy changes) | Low | Medium | Abstract the AI provider behind an internal interface where practical |
+
+### 3.4 Limitations
+
+The system does not replace human academic advising: it is a formative aid, and its recommendations are not a substitute for teacher feedback. Mastery percentages and skill-gap detection are only as accurate as the rubric and grade data supplied, so ungraded or loosely structured assessments will reduce accuracy. The version delivered within this subject is expected to demonstrate the core concept, namely skill-gap detection, the mastery dashboard, and adaptive quizzes, rather than the full long-term roadmap described in Section 8.
 
 ## 4. Evaluation Criteria and Requirements
 
@@ -93,12 +104,20 @@ Constraints include reliance on Moodle data access and permissions, handling of 
 
 ## 7. Price and Budget
 
+This project is being delivered as a student project with no external client funding. The budget below reflects an in-kind, no-cost approach using free tiers and existing student resources, with placeholders for any service where a real cost may apply.
+
 | Item | Cost or In-Kind/Licence Type | Notes |
 | --- | --- | --- |
-| Development tooling | PLACEHOLDER | Note whether free tier, student licence, or paid |
-| Hosting or cloud services | PLACEHOLDER | Note provider and expected usage tier |
-| AI/API usage | PLACEHOLDER | Note provider and estimated usage costs |
-| Team labour (in-kind) | In-kind | Estimated hours across all team members |
+| Development tooling (IDE, GitHub, Jira) | In-kind / free tier | GitHub free plan, Jira free tier for small teams, standard student-licensed IDEs |
+| Hosting or cloud services | PLACEHOLDER | Confirm provider, for example a free tier of a cloud platform, and expected usage tier before submission |
+| AI/API usage (feedback generation, quiz generation) | PLACEHOLDER | Confirm provider and estimated usage costs; assume free or trial credits where possible during development |
+| Design and documentation tools | In-kind / free tier | For example Markdown and free diagramming tools |
+| Team labour (in-kind) | In-kind | Estimated hours across all team members; not costed in dollar terms for this academic submission |
+| Contingency | PLACEHOLDER | Add a contingency line if any paid service becomes necessary, for example exceeding a free-tier quota |
+
+Total estimated cash budget: PLACEHOLDER (expected to be zero to low cost if free tiers are sufficient; update if any paid services are required).
+
+Note: all figures above are placeholders or in-kind estimates for an academic tender exercise and must be confirmed by the team before final submission. No real financial or banking information should be entered into this document.
 
 ## 8. Roadmap
 
