@@ -1,13 +1,13 @@
 # Tender Document – Learning Journey Assistant
 
-This is a working draft of the tender document for Assessment 2 (CSE5IDP), built from the project description and the required tender template structure. Sections marked PLACEHOLDER need real information from the team before submission and must not be left as-is.
+This is a working draft of the tender document for Assessment 2 (CSE5IDP), built from the project description and the required tender template structure. Fields marked PLACEHOLDER still need real information supplied directly by the team (legal/business details, ABN/ACN, and each person's own experience, skills, and certifications) before submission; these cannot be filled in on the team's behalf.
 
 ## 1. Tenderer Details
 
-Team / business legal name: PLACEHOLDER
-ABN or ACN: PLACEHOLDER
+Team / business legal name: PLACEHOLDER (real registered team or business name required)
+ABN or ACN: PLACEHOLDER (a real ABN or ACN is required; do not submit without an accurate number)
 Business address: PLACEHOLDER
-Contact person: PLACEHOLDER
+Contact person: PLACEHOLDER (suggested owner: Anjan Paudel, as the assigned lead for this section in Jira; confirm with the team)
 Contact email: PLACEHOLDER
 Contact phone: PLACEHOLDER
 RFT number: PLACEHOLDER (confirm with subject coordinator)
@@ -62,12 +62,14 @@ The system does not replace human academic advising: it is a formative aid, and 
 
 ## 4. Evaluation Criteria and Requirements
 
+The weighting below is a proposed split for team review against the Assessment 2 marking rubric; confirm final percentages with the subject coordinator's guide before submission.
+
 | Criterion | Weighting | Description |
 | --- | --- | --- |
-| Project Summary | PLACEHOLDER % | Clarity and completeness of purpose, objectives, and context |
-| Business Assessment | PLACEHOLDER % | Quality of situation assessment, options, and justification |
-| Project Scope | PLACEHOLDER % | Feasibility and completeness of scope and implementation strategy |
-| Evaluation Matrix, Metrics and Deliverables | PLACEHOLDER % | Clarity of deliverables, timelines, and success metrics |
+| Project Summary | 15% | Clarity and completeness of purpose, objectives, and context |
+| Business Assessment | 25% | Quality of situation assessment, options, and justification |
+| Project Scope | 35% | Feasibility and completeness of scope and implementation strategy |
+| Evaluation Matrix, Metrics and Deliverables | 25% | Clarity of deliverables, timelines, and success metrics |
 
 | Requirement | Type | Importance |
 | --- | --- | --- |
@@ -80,27 +82,31 @@ The system does not replace human academic advising: it is a formative aid, and 
 
 ## 5. Deliverables and Anticipated Hours and Timelines
 
+Owners below are drawn from the current Jira assignments for each corresponding epic.
+
 | Deliverable | Owner | Due Date |
 | --- | --- | --- |
-| Tenderer details and project summary | PLACEHOLDER | 12 Aug 2026 |
-| Team capabilities section | PLACEHOLDER | 12 Aug 2026 |
-| Statement of work and business assessment | PLACEHOLDER | 16 Aug 2026 |
-| Constraints and risks section | PLACEHOLDER | 16 Aug 2026 |
-| Evaluation criteria and requirements | PLACEHOLDER | 18 Aug 2026 |
-| Price and budget section | PLACEHOLDER | 18 Aug 2026 |
-| Deliverables and timelines section | PLACEHOLDER | 20 Aug 2026 |
-| Final tender document, formatted and proofread | PLACEHOLDER | 22 Aug 2026 |
+| Tenderer details and project summary | Anjan Paudel, Prabhashi Wakkumbura | 12 Aug 2026 |
+| Team capabilities section | Anjan Paudel | 12 Aug 2026 |
+| Statement of work and business assessment | Prabhashi Wakkumbura | 16 Aug 2026 |
+| Constraints and risks section | Kartik Panikar | 16 Aug 2026 |
+| Evaluation criteria and requirements | Farshad Zamiri | 18 Aug 2026 |
+| Price and budget section | Kartik Panikar | 18 Aug 2026 |
+| Deliverables and timelines section | Ge Su | 20 Aug 2026 |
+| Final tender document, formatted and proofread | Whole team | 22 Aug 2026 |
 | Submission | Whole team | 23 Aug 2026 |
 
 ## 6. Team Capabilities
 
+Names and section ownership below reflect current Jira assignments. Each person's experience, technical skills, and certifications must be supplied by that person directly, since this is real personal information that cannot be filled in on anyone's behalf.
+
 | Name | Role | Experience and Technical Skills | Certifications |
 | --- | --- | --- | --- |
-| PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
-| PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
-| PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
-| PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
-| PLACEHOLDER | PLACEHOLDER | PLACEHOLDER | PLACEHOLDER |
+| Prabhashi Wakkumbura | Statement of Work lead | PLACEHOLDER, to be provided by Prabhashi | PLACEHOLDER |
+| Anjan Paudel | Tenderer Details and Team Capabilities lead | PLACEHOLDER, to be provided by Anjan | PLACEHOLDER |
+| Kartik Panikar | Constraints/Risks and Price/Budget lead | PLACEHOLDER, to be provided by Kartik | PLACEHOLDER |
+| Farshad Zamiri | Evaluation Criteria lead | PLACEHOLDER, to be provided by Farshad | PLACEHOLDER |
+| Ge Su | Deliverables and Timelines lead | PLACEHOLDER, to be provided by Ge | PLACEHOLDER |
 
 ## 7. Price and Budget
 
