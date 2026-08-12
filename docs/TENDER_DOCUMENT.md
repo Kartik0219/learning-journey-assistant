@@ -1,15 +1,15 @@
 # Tender Document – Learning Journey Assistant
 
-This is a working draft of the tender document for Assessment 2 (CSE5IDP), built from the project description and the required tender template structure. Fields marked PLACEHOLDER still need real information supplied directly by the team (legal/business details, ABN/ACN, and each person's own experience, skills, and certifications) before submission; these cannot be filled in on the team's behalf.
+This is a working draft of the tender document for Assessment 2 (CSE5IDP), built from the project description and the required tender template structure. Section 1's legal/business identity uses an agreed fictional placeholder, since this is an academic tender simulation rather than a real registered business. Fields still marked PLACEHOLDER need real information supplied directly by each person (Anjan's real contact email/phone in Section 1, and each team member's own experience, skills, and certifications in Section 6) before submission; these cannot be filled in on anyone's behalf.
 
 ## 1. Tenderer Details
 
-Team / business legal name: PLACEHOLDER (real registered team or business name required)
-ABN or ACN: PLACEHOLDER (a real ABN or ACN is required; do not submit without an accurate number)
-Business address: PLACEHOLDER
-Contact person: PLACEHOLDER (suggested owner: Anjan Paudel, as the assigned lead for this section in Jira; confirm with the team)
-Contact email: PLACEHOLDER
-Contact phone: PLACEHOLDER
+Team / business legal name: Nexus Learning Solutions (fictional student-team trading name for this academic tender exercise, not a real registered business — rename if the team prefers)
+ABN or ACN: ABN 45 123 456 789 / ACN 123 456 789 (illustrative placeholder format for this assessment simulation; confirm with the subject coordinator if a real number is ever required)
+Business address: La Trobe University, Plenty Road, Bundoora VIC 3086
+Contact person: Anjan Paudel (Tenderer Details lead per Jira)
+Contact email: PLACEHOLDER — needs Anjan's real student email; this is a functional contact detail, not fictional, so it should not be invented
+Contact phone: PLACEHOLDER — needs Anjan's real contact phone; same as above, must be genuine
 RFT number: PLACEHOLDER (confirm with subject coordinator)
 
 ## 2. Statement of Work
