@@ -115,14 +115,13 @@ This project is being delivered as a student project with no external client fun
 | Item | Cost or In-Kind/Licence Type | Notes |
 | --- | --- | --- |
 | Development tooling (IDE, GitHub, Jira) | In-kind / free tier | GitHub free plan, Jira free tier for small teams, standard student-licensed IDEs |
-| Hosting or cloud services | PLACEHOLDER | Confirm provider, for example a free tier of a cloud platform, and expected usage tier before submission |
-| AI/API usage (feedback generation, quiz generation) | PLACEHOLDER | Confirm provider and estimated usage costs; assume free or trial credits where possible during development |
+| Hosting or cloud services | In-kind / free tier | Vercel or Netlify free tier for front-end hosting, Supabase free tier for the database/auth layer — sufficient for a small-cohort proof-of-concept; would only incur cost if usage exceeds free-tier limits |
+| AI/API usage (feedback generation, quiz generation) | Free tier / trial credits (est. $0) | Assumes an LLM API free tier or trial credits (e.g., OpenAI or Anthropic trial credits) during development; would only incur cost if testing volume exceeds the free quota |
 | Design and documentation tools | In-kind / free tier | For example Markdown and free diagramming tools |
 | Team labour (in-kind) | In-kind | Estimated hours across all team members; not costed in dollar terms for this academic submission |
-| Contingency | PLACEHOLDER | Add a contingency line if any paid service becomes necessary, for example exceeding a free-tier quota |
+| Contingency | $20 (buffer only) | Held only to cover AI/API usage exceeding its free tier during testing; not expected to be drawn on |
 
-Total estimated cash budget: PLACEHOLDER (expected to be zero to low cost if free tiers are sufficient; update if any paid services are required).
-
+Total estimated cash budget: $0–$20 (expected $0 if free tiers are sufficient for hosting, database, and AI/API usage; the small buffer above is held only in case AI/API testing exceeds its free quota).
 Note: all figures above are placeholders or in-kind estimates for an academic tender exercise and must be confirmed by the team before final submission. No real financial or banking information should be entered into this document.
 
 ## 8. Roadmap
