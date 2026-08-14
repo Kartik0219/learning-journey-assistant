@@ -104,7 +104,7 @@ Names and section ownership below reflect current Jira assignments. Each person'
 | --- | --- | --- | --- |
 | Prabhashi Wakkumbura | Statement of Work lead | PLACEHOLDER, to be provided by Prabhashi | PLACEHOLDER |
 | Anjan Paudel | Tenderer Details and Team Capabilities lead | PLACEHOLDER, to be provided by Anjan | PLACEHOLDER |
-| Kartik Panikar | Constraints/Risks and Price/Budget lead | PLACEHOLDER, to be provided by Kartik | PLACEHOLDER |
+| Kartik Panikar | Constraints/Risks and Price/Budget lead | Master of Cyber Security student at La Trobe University (Bachelor of Information Technology, RMIT, 2024); hands-on experience with Python, SQL, and HTML, plus security/networking tools including Wireshark, Microsoft Defender, Active Directory, and TCP/IP; familiar with Microsoft Azure and Google Cloud. Built a WordPress-based HTML-to-XML content tool during a 2024 industry capstone with Blue Eclipse Inc. as part of a four-person team. | Google Cybersecurity Professional Certificate (2024) |
 | Farshad Zamiri | Evaluation Criteria lead | PLACEHOLDER, to be provided by Farshad | PLACEHOLDER |
 | Ge Su | Deliverables and Timelines lead | PLACEHOLDER, to be provided by Ge | PLACEHOLDER |
 
