@@ -60,6 +60,14 @@ It is assumed that subject rubrics and grade data can be obtained in a structure
 
 The system does not replace human academic advising: it is a formative aid, and its recommendations are not a substitute for teacher feedback. Mastery percentages and skill-gap detection are only as accurate as the rubric and grade data supplied, so ungraded or loosely structured assessments will reduce accuracy. The version delivered within this subject is expected to demonstrate the core concept, namely skill-gap detection, the mastery dashboard, and adaptive quizzes, rather than the full long-term roadmap described in Section 8.
 
+### 3.5 Governance (Team Agreement)
+
+This subsection records the team's working agreement for delivering the project, as called for under the Project Scope rubric criterion ("governance (Team Agreement)"). It should be discussed and agreed by the whole team rather than decided by one person, so the specific arrangements are left as PLACEHOLDER for the team to complete together: how the team will make decisions, for example by consensus, majority vote, or escalation to a nominated lead; how responsibilities are assigned beyond the section ownership already listed in Section 6; the agreed communication channels and meeting cadence; the expected turnaround time on tasks and how work is reviewed before being committed; how disagreements or missed commitments will be raised and resolved; and expectations around availability and responsiveness given team members' other study or work commitments.
+
+PLACEHOLDER: Team Agreement details to be filled in and agreed by the whole team, covering decision-making process, meeting cadence, communication channels, work standards, and conflict resolution.
+
+This section must be completed and agreed by the whole team before final submission, since a Team Agreement records a shared commitment rather than one person's decision.
+
 ## 4. Evaluation Criteria and Requirements
 
 The weighting below is a proposed split for team review against the Assessment 2 marking rubric; confirm final percentages with the subject coordinator's guide before submission.
