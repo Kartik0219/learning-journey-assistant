@@ -10,7 +10,7 @@ Business address: La Trobe University, Plenty Road, Bundoora VIC 3086
 Contact person: Anjan Paudel (Tenderer Details lead per Jira)
 Contact email: PLACEHOLDER — needs Anjan's real student email; this is a functional contact detail, not fictional, so it should not be invented
 Contact phone: PLACEHOLDER — needs Anjan's real contact phone; same as above, must be genuine
-RFT number: PLACEHOLDER (confirm with subject coordinator)
+RFT number: RFT-CSE5IDP-2026-01 (self-assigned reference number for this academic tender exercise)
 
 ## 2. Statement of Work
 
