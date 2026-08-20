@@ -2,6 +2,8 @@
 
 This is a working draft of the tender document for Assessment 2 (CSE5IDP), built from the project description and the required tender template structure. Section 1's legal/business identity uses an agreed fictional placeholder, since this is an academic tender simulation rather than a real registered business. Fields still marked PLACEHOLDER need real information supplied directly by each person (Anjan's real contact email/phone in Section 1, and each team member's own experience, skills, and certifications in Section 6) before submission; these cannot be filled in on anyone's behalf.
 
+As of 20 August 2026, the version the team is actually finalising and submitting is the Word document Tender_-_Learning_Journey_Assistant_Group_9.docx (built on the official template, tracked via Jira ticket IOG-16), not this file. This markdown draft is kept as a working record but is no longer being updated to match that document line-for-line.
+
 ## 1. Tenderer Details
 
 Team / business legal name: Nexus Learning Solutions (fictional student-team trading name for this academic tender exercise, not a real registered business — rename if the team prefers)
@@ -10,7 +12,7 @@ Business address: La Trobe University, Plenty Road, Bundoora VIC 3086
 Contact person: Anjan Paudel (Tenderer Details lead per Jira)
 Contact email: PLACEHOLDER — needs Anjan's real student email; this is a functional contact detail, not fictional, so it should not be invented
 Contact phone: PLACEHOLDER — needs Anjan's real contact phone; same as above, must be genuine
-RFT number: RFT-CSE5IDP-2026-01 (self-assigned reference number for this academic tender exercise)
+RFT number: RFT-2026CSE5IDP-S2-LJA-G9 (matches the RFT number used in the official-template Word document the team is actually submitting)
 
 ## 2. Statement of Work
 
@@ -94,8 +96,8 @@ Owners below are drawn from the current Jira assignments for each corresponding 
 
 | Deliverable | Owner | Due Date |
 | --- | --- | --- |
-| Tenderer details and project summary | Anjan Paudel, Prabhashi Wakkumbura | 12 Aug 2026 |
-| Team capabilities section | Anjan Paudel | 12 Aug 2026 |
+| Tenderer details and project summary | Ge Su (completed per Jira reassignment; Anjan Paudel remains epic owner), Prabhashi Wakkumbura | 12 Aug 2026 |
+| Team capabilities section | Ge Su (completed per Jira reassignment; Anjan Paudel remains epic owner) | 12 Aug 2026 |
 | Statement of work and business assessment | Prabhashi Wakkumbura | 16 Aug 2026 |
 | Constraints and risks section | Kartik Panikar | 16 Aug 2026 |
 | Evaluation criteria and requirements | Farshad Zamiri | 18 Aug 2026 |
