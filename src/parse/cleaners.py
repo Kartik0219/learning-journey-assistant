@@ -30,6 +30,8 @@ from src.parse.schema_validation import (
     StudentRecord,
     SubjectRecord,
 )
+from src.security.audit import log_event
+from src.security.encryption import blind_index
 
 logger = get_logger(__name__)
 
@@ -84,10 +86,15 @@ def upsert_learning_outcome(session: Session, record: LearningOutcomeRecord) -> 
 
 
 def upsert_student(session: Session, record: StudentRecord) -> Student:
-    existing = session.query(Student).filter_by(student_number=record.student_number).one_or_none()
+    # N3: student_number is encrypted at rest (EncryptedString), so it can't
+    # be looked up directly - filter on the deterministic blind index
+    # instead. See src/security/encryption.py.
+    number_hash = blind_index(record.student_number)
+    existing = session.query(Student).filter_by(student_number_hash=number_hash).one_or_none()
     if existing:
         existing.display_name = record.display_name
         return existing
+    # student_number_hash is set automatically by Student's validator.
     student = Student(student_number=record.student_number, display_name=record.display_name)
     session.add(student)
     session.flush()
@@ -143,6 +150,17 @@ def run_parse_stage() -> None:
             upsert_rubric_criterion(session, record)
         for record in students:
             upsert_student(session, record)
+
+        # N4: audit log must record every data import.
+        log_event(
+            session,
+            actor="system",
+            action="data_import",
+            target=(
+                f"{len(subjects)} subjects, {len(learning_outcomes)} learning outcomes, "
+                f"{len(rubric_criteria)} rubric criteria, {len(students)} students"
+            ),
+        )
 
     logger.info(
         "Parse stage complete: %d subjects, %d learning outcomes, %d rubric criteria, %d students",
