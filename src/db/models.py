@@ -6,13 +6,16 @@ subjects, learning outcomes (SILOs), rubrics, students, assessment
 results, extracted skill gaps, and mastery scores - plus the two
 compliance records (consent, audit log) called for by N2 and N4.
 
-Privacy note (read before Phase 5 / IOG-42): this schema stores student
-identifiers and free-text feedback in plain columns for now. Requirement
-N3 ("encrypt stored student data") and N6 ("check authorisation on the
-server for every request") are NOT implemented here - that's explicitly
-IOG-42's scope. Don't treat this schema as production-ready for real
-student data until that ticket lands. Fields most in scope are  called
-out with a `# N3/N6:` comment below.
+Privacy note (IOG-42 / Phase 5): `Student.student_number` and
+`Student.display_name` are encrypted at rest (N3) via
+`src.security.encryption.EncryptedString` - see that module's docstring
+for how the companion `student_number_hash` column keeps lookups
+working on an encrypted column. Authorization (N6), audit logging (N4),
+and consent gating (N2) are implemented as reusable primitives in
+`src.security` but are not wired into a live web request yet, because
+there is no dashboard/API for them to protect (that's IOG-40, Phase 4).
+`feedback_text` below is still plain-text on purpose - see its own
+comment.
 """
 
 from __future__ import annotations
@@ -20,9 +23,10 @@ from __future__ import annotations
 import datetime as dt
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from src.db.database import Base
+from src.security.encryption import EncryptedString, blind_index
 
 
 def _now() -> dt.datetime:
@@ -93,16 +97,32 @@ class Student(Base):
     __tablename__ = "students"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    # N3/N6: student_number is the join key across every other table here -
-    # it's the highest-value target for unauthorised access. Phase 5 should
-    # decide whether this is encrypted at rest, pseudonymised, or protected
-    # purely via access control at the query layer.
-    student_number: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    display_name: Mapped[str] = mapped_column(String(200))
+    # N3: encrypted at rest. This column can no longer be queried with
+    # `filter_by(student_number=...)` - Fernet ciphertext is
+    # non-deterministic, so use `student_number_hash` for lookups instead
+    # (see src/security/encryption.py). Application code still just reads/
+    # writes this as a plain string; the ORM handles encrypt/decrypt.
+    # Column sized generously: Fernet ciphertext (IV + HMAC + padding,
+    # base64-encoded) runs noticeably longer than the plaintext it wraps.
+    student_number: Mapped[str] = mapped_column(EncryptedString(512))
+    # Deterministic HMAC of the normalised student_number - this is what
+    # every lookup/uniqueness check actually uses.
+    student_number_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    # N3: encrypted at rest. Never queried by value, only displayed, so it
+    # doesn't need a companion hash column.
+    display_name: Mapped[str] = mapped_column(EncryptedString(512))
 
     consent: Mapped["ConsentRecord | None"] = relationship(back_populates="student", uselist=False)
     results: Mapped[list["AssessmentResult"]] = relationship(back_populates="student")
     mastery_scores: Mapped[list["MasteryScore"]] = relationship(back_populates="student")
+
+    @validates("student_number")
+    def _keep_hash_in_sync(self, key: str, value: str) -> str:
+        """Recompute student_number_hash whenever student_number is set, so
+        it is never possible to create/update a Student with a stale or
+        missing hash - callers just set student_number normally."""
+        self.student_number_hash = blind_index(value)
+        return value
 
 
 class ConsentRecord(Base):
