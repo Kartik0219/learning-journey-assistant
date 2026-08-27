@@ -1,0 +1,81 @@
+"""Expected shape of incoming records, enforced before anything touches
+the database.
+
+N5: "Treat imported rubric and feedback text as untrusted. Keep it
+separate from system instructions, and reject model output that does
+not match the required format." This module is the "reject anything
+that doesn't match the required format" half of that for data coming
+IN (Phase 3's src/model layer is responsible for validating what comes
+OUT of the LLM, which is a separate concern).
+
+Each Pydantic model below mirrors one of the sample CSVs in
+data/sample/ - keep the two in sync if you add/rename a column.
+"""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field, field_validator
+
+
+class SubjectRecord(BaseModel):
+    subject_code: str = Field(min_length=1, max_length=20)
+    subject_name: str = Field(min_length=1, max_length=200)
+    description: str | None = None
+
+    @field_validator("subject_code")
+    @classmethod
+    def uppercase_code(cls, v: str) -> str:
+        return v.strip().upper()
+
+
+class LearningOutcomeRecord(BaseModel):
+    subject_code: str
+    silo_code: str
+    description: str = Field(min_length=1)
+
+    @field_validator("subject_code", "silo_code")
+    @classmethod
+    def uppercase_code(cls, v: str) -> str:
+        return v.strip().upper()
+
+
+class RubricCriterionRecord(BaseModel):
+    subject_code: str
+    rubric_name: str
+    criterion_text: str = Field(min_length=1)
+    silo_code: str | None = None
+
+    @field_validator("subject_code")
+    @classmethod
+    def uppercase_code(cls, v: str) -> str:
+        return v.strip().upper()
+
+    @field_validator("silo_code")
+    @classmethod
+    def uppercase_optional_code(cls, v: str | None) -> str | None:
+        return v.strip().upper() if v else None
+
+
+class StudentRecord(BaseModel):
+    # F2: "match student and subject identifiers" - student_number is the
+    # match key, so it's validated strictly rather than left as free text.
+    student_number: str = Field(min_length=1, max_length=50)
+    display_name: str = Field(min_length=1, max_length=200)
+
+    @field_validator("student_number")
+    @classmethod
+    def normalise_student_number(cls, v: str) -> str:
+        return v.strip().upper()
+
+
+class AssessmentResultRecord(BaseModel):
+    subject_code: str
+    assessment_name: str
+    student_number: str
+    score: float | None = Field(default=None, ge=0, le=100)
+    feedback_text: str | None = None
+
+    @field_validator("subject_code", "student_number")
+    @classmethod
+    def uppercase_code(cls, v: str) -> str:
+        return v.strip().upper()
