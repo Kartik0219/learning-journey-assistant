@@ -1,0 +1,4 @@
+subject_code,silo_code,description
+DEMO101,SILO1,Explain core concepts of the demo domain.
+DEMO101,SILO2,Apply demo techniques to a sample problem.
+DEMO101,SILO3,Critically evaluate a demo solution's trade-offs.

@@ -1,0 +1,5 @@
+subject_code,rubric_name,criterion_text,silo_code
+DEMO101,Assignment 1 Rubric,Clearly explains at least two core concepts with correct terminology.,SILO1
+DEMO101,Assignment 1 Rubric,Applies a demo technique correctly to the sample problem provided.,SILO2
+DEMO101,Assignment 1 Rubric,Identifies at least one trade-off in the proposed solution.,SILO3
+DEMO101,Assignment 1 Rubric,Report is well-structured and proofread.,
