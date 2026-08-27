@@ -25,6 +25,7 @@ class Settings:
     llm_provider: str | None
     llm_api_key: str | None
     app_secret_key: str
+    encryption_key: str
     log_level: str
 
     @property
@@ -51,5 +52,12 @@ def get_settings() -> Settings:
         llm_provider=os.getenv("LLM_PROVIDER") or None,
         llm_api_key=os.getenv("LLM_API_KEY") or None,
         app_secret_key=os.getenv("APP_SECRET_KEY", "changeme-dev-only"),
+        # N3: dev-only fallback so `pytest`/local runs work with zero setup.
+        # This is a real, valid Fernet key - fine for local dev, but every
+        # non-dev environment must set its own via `Fernet.generate_key()`
+        # (see .env.example) and never commit that value.
+        encryption_key=os.getenv(
+            "ENCRYPTION_KEY", "XOcjJUrnSvGw5MrTuZKQ0hxBhnlPk5yjxyQuKnyxFJY="
+        ),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
     )
