@@ -28,14 +28,15 @@ written for N8 ("...notes on data fields and security controls").
 
 | Field | Notes |
 |---|---|
-| `student_number` | The cross-table join key. **Sensitive** - see security controls below. Normalised uppercase on ingest. |
-| `display_name` | Sensitive (PII). Currently stored in plain text - flagged for Phase 5. |
+| `student_number` | The cross-table join key. **Encrypted at rest** (N3, `EncryptedString`) — the ORM decrypts transparently on read. Never queryable by value directly; use `student_number_hash`. Normalised uppercase before encryption. |
+| `student_number_hash` | Deterministic HMAC-SHA256 of the normalised `student_number` — unique/indexed, and what every lookup actually filters on, since encrypted ciphertext isn't stable across writes. Kept in sync automatically by a model-level validator; never set it by hand. |
+| `display_name` | **Encrypted at rest** (N3, `EncryptedString`). Only ever read for display, never filtered on, so it has no companion hash column. |
 
 ## `consent_records`
 
 | Field | Notes |
 |---|---|
-| `consent_given` / `withdrawn_date` | N2: no student's data should be processed by any pipeline stage unless `ConsentRecord.is_active` is `True`. This is not yet enforced anywhere outside the model itself - each stage needs to check it once Phase 5 lands. |
+| `consent_given` / `withdrawn_date` | N2: no student's data should be processed by any pipeline stage unless `ConsentRecord.is_active` is `True`. Enforced via `src.security.consent.ensure_consent_active()` — every stage beyond basic identity provisioning must call it before touching that student's rows. Not yet called by Phases 3/4 because those stages don't exist yet; it *is* called (and tested) from the Phase 4 dashboard stub as a contract for whoever builds it. |
 
 ## `assessment_results`
 
@@ -61,17 +62,22 @@ written for N8 ("...notes on data fields and security controls").
 
 | Field | Notes |
 |---|---|
-| (all) | Append-only. N4 requires logging sign-in, consent changes, data import, and study-plan/quiz creation - this table exists but nothing writes to it yet (Phase 5 / IOG-42). |
+| `actor` | A `student_number` or `"system"`. Stored in **plain text on purpose** — an audit trail staff can actually read during a review is the point of N4; encrypting the actor field would defeat that. This is a deliberate scope boundary, not an oversight. |
+| (all) | Append-only — write with `src.security.audit.log_event()`, never construct a row by hand or `UPDATE`/`DELETE` one. Currently written on every `run_parse_stage()` call (`data_import`) and every `record_consent()` call (`consent_given` / `consent_withdrawn`). Sign-in and quiz/plan-creation events will be added once Phases 4/6 build the features that produce them. |
 
-## Security controls status (N3, N6)
+## Security controls status (N3, N4, N6 — IOG-42)
 
-**Not implemented in this scaffold:**
+**Implemented, in `src/security/`:**
 
-- Encryption at rest for `students.student_number` / `students.display_name`
-- Server-side authorisation checks preventing cross-student access (N6)
-- Wiring `audit_log_entries` into actual write paths (N4)
-- Enforcing `ConsentRecord.is_active` before any pipeline stage touches a student's rows (N2)
+- Encryption at rest for `students.student_number` / `students.display_name` (`encryption.py`, `EncryptedString` + `blind_index()` for lookups)
+- Server-side authorization primitive for "can this actor see this student's data" (`authorization.py`, `require_student_access()`) — wired into the Phase 4 dashboard stub as a contract
+- Audit logging (`audit.py`, `log_event()`) — wired into data import and consent changes
+- Consent gating (`consent.py`, `ensure_consent_active()` / `record_consent()`) — wired into the Phase 4 dashboard stub as a contract
 
-All four are explicitly IOG-42's scope (Phase 5). Treat this schema as a
-structural design, not a privacy-compliant system, until that ticket is
-done - don't load real student data against it before then.
+**Still open:**
+
+- No login/session system exists yet (that's Phase 4/6, IOG-40), so `Actor` is currently constructed by hand in tests rather than derived from a real authenticated request — the primitive is ready, the caller isn't built.
+- Sign-in and quiz/plan-creation audit events, since those features don't exist yet.
+- Key rotation / secrets management beyond `.env` — fine for this academic scope, not production-grade.
+
+See `tests/test_security.py` for the enforcement behaviour (encryption round-trips through the ORM but not the raw DB row, consent blocks with no record and after withdrawal, cross-student access is rejected, and the dashboard stub proves it can't be reached without passing both checks).

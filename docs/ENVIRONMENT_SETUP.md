@@ -60,12 +60,16 @@ ruff check .
 | Parse | Working - validates + upserts subjects, learning outcomes, rubric criteria, students | IOG-34 |
 | Model (skill-gap extraction, SILO mapping) | Stub, raises `NotImplementedError` | IOG-37, IOG-38 |
 | Estimate (mastery scoring, study recommendations, quizzes) | Stub | IOG-38, IOG-39 |
-| Deliver (dashboard) | Stub | IOG-40 |
+| Deliver (dashboard) | Stub, but gated by real IOG-42 security checks (see below) | IOG-40 |
+| Security (encryption, RBAC, audit log, consent) | Implemented as reusable primitives in `src/security/` | IOG-42 |
 
 ## Data fields and security controls (N8)
 
-See `docs/DATA_DICTIONARY.md` for the field-by-field notes. Security
-controls (encryption at rest, RBAC, audit logging, consent enforcement)
-are **not implemented yet** - that's IOG-42 (Phase 5). The schema in
-`src/db/models.py` has `# N3/N6:` comments marking where that work
-plugs in.
+See `docs/DATA_DICTIONARY.md` for the field-by-field notes. Encryption
+at rest, an authorization check, audit logging, and consent gating are
+implemented in `src/security/` (IOG-42) and covered by
+`tests/test_security.py`. What's *not* done yet: there's no login/
+session system for these primitives to sit behind (that's Phase 4/6,
+IOG-40) - `Actor` is constructed directly in code/tests for now rather
+than derived from a real request. Generate your own `ENCRYPTION_KEY`
+before running anything beyond local dev - see `.env.example`.
