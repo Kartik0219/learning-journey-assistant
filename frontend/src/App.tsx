@@ -55,7 +55,7 @@ function App() {
         <nav className={menuOpen ? 'navbar navbar--open' : 'navbar'} id="primary-navigation" aria-label="Primary navigation">
           <div className="navigation">
             {navigation.map(({ label, icon: Icon, to }) => (
-              <NavLink className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} key={label} to={to} end={to === '/'} onClick={closeMenu}>
+              <NavLink className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} key={label} to={to} end={to === '/'}>
                 <Icon size={16} aria-hidden="true" />
                 {label}
               </NavLink>

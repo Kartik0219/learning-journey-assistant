@@ -36,9 +36,8 @@ function actionFor(statusLabel: string): string {
   }
 }
 
-function shortName(id: string, description: string): string {
-  const words = description.split(/\s+/)
-  return `${id} · ${words.slice(0, 6).join(' ')}${words.length > 6 ? '…' : ''}`
+function siloName(id: string, description: string): string {
+  return `${id} · ${description}`
 }
 
 function buildSubject(code: string): DashboardSubject {
@@ -69,7 +68,7 @@ function buildSubject(code: string): DashboardSubject {
     const weakestContribution = [...contributing].sort((a, b) => a.score - b.score)[0]
 
     return {
-      name: shortName(silo.id, silo.description),
+      name: siloName(silo.id, silo.description),
       masteryPercentage,
       status,
       statusLabel,
