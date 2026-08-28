@@ -45,7 +45,7 @@ function App() {
             </NavLink>
           ))}
         </nav>
-        <div className="student-profile"><span className="avatar">AL</span><span><strong>Alex Lee</strong><small>Undergraduate</small></span></div>
+        <div className="student-profile"><span className="avatar">S1</span><span><strong>Student STU0001</strong><small>Undergraduate</small></span></div>
       </aside>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
