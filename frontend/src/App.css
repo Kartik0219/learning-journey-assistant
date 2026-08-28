@@ -62,9 +62,19 @@
 .generate-btn { align-items: center; background: #00806b; border: 0; border-radius: 9px; color: #fff; cursor: pointer; display: inline-flex; font: inherit; font-size: 13.5px; font-weight: 700; gap: 8px; padding: 11px 16px; transition: background .14s ease, transform .05s ease; }
 .generate-btn:hover:not(:disabled), .generate-btn:focus-visible:not(:disabled) { background: #006b5a; }
 .generate-btn:active:not(:disabled) { transform: translateY(1px); }
-.generate-btn:disabled { background: #7fb8ac; cursor: progress; }
+.generate-btn:disabled { background: #7fb8ac; cursor: not-allowed; }
 .generate-btn:focus-visible { outline: 2px solid #00c2a8; outline-offset: 2px; }
+.generate-btn--ghost { background: #fff; border: 1px solid #c9d3e8; color: #1e2761; }
+.generate-btn--ghost:hover:not(:disabled), .generate-btn--ghost:focus-visible:not(:disabled) { background: #f1f4fb; border-color: #00806b; }
+.generate-btn--ghost:disabled { background: #f4f6fb; border-color: #dfe4f0; color: #9aa1b8; }
 .generate-hint { color: #5a6178; font-size: 12px; }
+.generate-meta { color: #5a6178; font-size: 11.5px; margin: 0 0 16px; }
+.subtabs { border-bottom: 1px solid #e0e5f0; display: flex; gap: 4px; margin: 0 0 16px; }
+.subtab { background: transparent; border: 0; border-bottom: 2px solid transparent; color: #5a6178; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; margin-bottom: -1px; padding: 9px 12px; transition: color .12s ease, border-color .12s ease; }
+.subtab:hover:not(:disabled) { color: #1e2761; }
+.subtab[aria-selected="true"] { border-bottom-color: #00a38c; color: #1e2761; }
+.subtab:disabled { color: #aab1c4; cursor: not-allowed; }
+.subtab:focus-visible { outline: 2px solid #00a38c; outline-offset: -2px; }
 .plan-empty p { color: #5a6178; font-size: 13px; line-height: 1.6; margin: 0; }
 .plan-empty strong { color: #1e2761; }
 .ai-note { align-items: flex-start; background: #eef2fc; border: 1px solid #d7e0f5; border-radius: 8px; color: #3a4166; display: flex; font-size: 12.5px; gap: 8px; line-height: 1.5; margin: 0 0 18px; padding: 11px 13px; }
@@ -76,6 +86,27 @@
 .plan-weakness { color: #414a68; font-size: 13px; line-height: 1.6; margin: 0 0 13px; }
 .plan-weakness strong { color: #1e2761; }
 .plan-steps__label { color: #5a6178; font-size: 10px; font-weight: 800; letter-spacing: .02em; margin: 0 0 6px; text-transform: uppercase; }
+
+/* Study plan tab - icon-headed catalogue groups */
+.plan-card .plan-item__head { border-bottom: 1px solid #eef1f8; margin-bottom: 14px; padding-bottom: 12px; }
+.plan-group + .plan-group { margin-top: 16px; }
+.plan-group__head { align-items: center; color: #364065; display: flex; font-size: 10.5px; font-weight: 800; gap: 7px; letter-spacing: .04em; margin: 0 0 9px; text-transform: uppercase; }
+.plan-group__head svg { color: #00806b; flex: none; }
+.catalog-list { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.catalog-item { border: 1px solid #e3e8f4; border-radius: 7px; transition: background .12s ease, border-color .12s ease; }
+.catalog-item a { color: #26304f; display: flex; font-size: 12.5px; font-weight: 600; gap: 8px; line-height: 1.45; padding: 9px 11px; text-decoration: none; }
+.catalog-item a::before { color: #00a38c; content: '›'; flex: none; font-weight: 800; }
+.catalog-item:hover { background: #f2faf8; border-color: #bfe0d8; }
+.plan-group .steps li { padding: 8px 0; }
+.plan-group .steps li:first-child { padding-top: 2px; }
+
+/* .feedback-list is styled for the dark evidence card; re-theme it for the
+   light study-plan panel so the quoted feedback stays readable. */
+.plan-item .feedback-list details { background: #f3f5fb; border: 1px solid #e3e8f4; }
+.plan-item .feedback-list summary { color: #26304f; }
+.plan-item .feedback-list .fb-score { color: #5a6178; }
+.plan-item .feedback-list summary::after { border-color: #8a92ad; }
+.plan-item .feedback-list q { color: #333c58; }
 
 /* Four-band mastery colour coding (see band() in studentDashboard.ts). */
 .status.atRisk { background: #fbe1dd; color: #a3271c; }
