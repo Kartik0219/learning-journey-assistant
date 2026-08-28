@@ -36,7 +36,7 @@ written for N8 ("...notes on data fields and security controls").
 
 | Field | Notes |
 |---|---|
-| `consent_given` / `withdrawn_date` | N2: no student's data should be processed by any pipeline stage unless `ConsentRecord.is_active` is `True`. Enforced via `src.security.consent.ensure_consent_active()` — every stage beyond basic identity provisioning must call it before touching that student's rows. Not yet called by Phases 3/4 because those stages don't exist yet; it *is* called (and tested) from the Phase 4 dashboard stub as a contract for whoever builds it. |
+| `consent_given` / `withdrawn_date` | N2: no student's data should be processed by any pipeline stage unless `ConsentRecord.is_active` is `True`. Enforced via `src.security.consent.ensure_consent_active()`. `src.pipeline.run_estimate_stage()` calls this per student *before* running Phase 4 for them — a student with no active consent is skipped entirely, not just hidden later. The dashboard (`src.deliver.dashboard_api.get_student_dashboard()`) calls it again before assembling that student's view. The bundled sample dataset's consent is seeded via the real `record_consent()` API in `src.parse.cleaners.seed_demo_consent()` — same code path and audit trail a genuine consent flow would use, not a bypass. |
 
 ## `assessment_results`
 
@@ -49,14 +49,38 @@ written for N8 ("...notes on data fields and security controls").
 
 | Field | Notes |
 |---|---|
-| `source_evidence_text` | Required, not optional - F4 mandates every gap cite a specific line of rubric/feedback. |
-| `confidence` | 0.0-1.0. Below the team's agreed threshold -> `reviewed` stays `False` and it must not be surfaced to the student (F4). |
+| `source_evidence_text` | Required, not optional - F4 mandates every gap cite a specific line of rubric/feedback. Populated verbatim from a clause of `assessment_results.feedback_text` by `src.model.silo_mapping.extract_skill_gaps()` — nothing is written here that wasn't literally present in the input (N5). |
+| `confidence` | 0.0-1.0. TF-IDF (character n-gram) cosine similarity between the evidence clause and the closest rubric criterion. Below `CONFIDENCE_REVIEW_THRESHOLD` (0.15) -> `reviewed` stays `False` and it must not be surfaced to the student (F4) — enforced in `src.deliver.dashboard_api.get_student_dashboard()`, which only ever includes `reviewed=True` gaps in a student's outcomes. |
+| `learning_outcome_id` | Set by `src.model.silo_mapping.map_gap_to_learning_outcome()` (F5) — TF-IDF similarity against the subject's learning-outcome descriptions, left `None` rather than forced onto a weak match below `LO_MAPPING_THRESHOLD` (0.08). |
+| `gap_type` | `conceptual` / `application` / `evaluation`, derived deterministically from the matched learning outcome's verb (`gap_type_for()`). Feeds `src.estimate.mastery`'s fixed study-method table (F7); `None` until a learning outcome has been assigned. |
 
 ## `mastery_scores`
 
 | Field | Notes |
 |---|---|
-| `score` | 0.0-1.0. Must be reproducible from `explanation_text` + the underlying `skill_gaps` (F6) - if you can't explain a number, don't write it. |
+| `score` | 0.0-1.0. `src.estimate.mastery.calculate_mastery_score()` (F6): `clip(mean_assessment_score/100 - Σ(severity_weight × confidence) over reviewed gaps + engagement_bonus, 0, 1)`. Must be reproducible from `explanation_text` + the underlying `skill_gaps` - if you can't explain a number, don't write it. |
+| `explanation_text` | Built from a template naming the exact baseline percentage, every contributing gap's quote/severity/confidence, and any engagement bonus applied — never freely generated. |
+
+## `topic_materials`
+
+| Field | Notes |
+|---|---|
+| `passage_text` | Short subject-material passage (F9), pre-split so Estimate can retrieve the closest one by similarity and cite it verbatim rather than asking a model to recall it from memory. |
+| `learning_outcome_id` | Nullable. When set, `generate_study_material()` prefers this SILO's tagged passages before falling back to the whole subject. |
+
+## `study_recommendations`
+
+| Field | Notes |
+|---|---|
+| `method` | `worked_example` / `retrieval_practice` / `spaced_practice` — looked up from `STUDY_METHOD_TABLE` by gap type (F7), never chosen by a model. |
+| `material_text` | Templated around `source_topic_material`'s own words, with a citation — grounded by retrieval (F8/F9), not generated freely, so nothing here can be hallucinated. |
+| `source_topic_material_id` | Nullable — `None` (with `material_text` saying so plainly) when the subject has no topic material yet, rather than fabricating content. |
+
+## `study_engagements`
+
+| Field | Notes |
+|---|---|
+| `completed` | F11: recording a completion via `src.estimate.mastery.record_engagement()` immediately recalculates the affected `mastery_scores` row with a small, capped bonus (`ENGAGEMENT_BONUS_PER_COMPLETION`, capped at `ENGAGEMENT_BONUS_CAP`) rather than waiting for the next pipeline run. |
 
 ## `audit_log_entries`
 
@@ -70,14 +94,13 @@ written for N8 ("...notes on data fields and security controls").
 **Implemented, in `src/security/`:**
 
 - Encryption at rest for `students.student_number` / `students.display_name` (`encryption.py`, `EncryptedString` + `blind_index()` for lookups)
-- Server-side authorization primitive for "can this actor see this student's data" (`authorization.py`, `require_student_access()`) — wired into the Phase 4 dashboard stub as a contract
+- Server-side authorization primitive for "can this actor see this student's data" (`authorization.py`, `require_student_access()`) — wired into the real Phase 4 dashboard (`src.deliver.dashboard_api.get_student_dashboard()`, IOG-40), and re-validated a second time on the `/practice` completion endpoint since that one takes `student_id` from form data
 - Audit logging (`audit.py`, `log_event()`) — wired into data import and consent changes
-- Consent gating (`consent.py`, `ensure_consent_active()` / `record_consent()`) — wired into the Phase 4 dashboard stub as a contract
+- Consent gating (`consent.py`, `ensure_consent_active()` / `record_consent()`) — wired into the Estimate stage (per-student, before scoring) and into the dashboard
 
 **Still open:**
 
-- No login/session system exists yet (that's Phase 4/6, IOG-40), so `Actor` is currently constructed by hand in tests rather than derived from a real authenticated request — the primitive is ready, the caller isn't built.
-- Sign-in and quiz/plan-creation audit events, since those features don't exist yet.
+- `src.deliver.app` has a lightweight, session-based "login" (pick a demo student number, no password) so the dashboard is reachable end-to-end for a demo — it is explicitly documented in that module as not a real authentication system, and is a separate concern from the RBAC/consent checks above, which are real and exercised through it. A production login system is out of this academic project's scope.
 - Key rotation / secrets management beyond `.env` — fine for this academic scope, not production-grade.
 
-See `tests/test_security.py` for the enforcement behaviour (encryption round-trips through the ORM but not the raw DB row, consent blocks with no record and after withdrawal, cross-student access is rejected, and the dashboard stub proves it can't be reached without passing both checks).
+See `tests/test_security.py` for the authorization/consent/encryption/audit enforcement behaviour (including that a cross-student dashboard request fails before any of the other student's rows are read), and `tests/test_estimate_mastery.py` / `tests/test_deliver_dashboard.py` for Phase 3/4's own behaviour built on top of those gates.

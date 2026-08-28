@@ -26,16 +26,38 @@ sample data (`data/sample/`) when Moodle credentials aren't set (N9).
 ## Running the pipeline
 
 ```bash
-python -m src.parse.cleaners
+python -m src.pipeline
 ```
 
-This loads the sample dataset (Connect stage), validates and cleans it
-(Parse stage), and writes it into `ljas_dev.db` (a local SQLite file,
-gitignored). You should see a log line like:
+This runs all four data stages end to end against `ljas_dev.db` (a local
+SQLite file, gitignored): Connect + Parse (sample dataset -> validated,
+cleaned rows), Model (skill-gap extraction + SILO mapping), and Estimate
+(mastery scoring + study recommendations, skipping any student without
+active consent). You should see log lines like:
 
 ```
-Parse stage complete: 1 subjects, 3 learning outcomes, 4 rubric criteria, 3 students
+Parse stage complete: 1 subjects, 3 learning outcomes, 4 rubric criteria, 3 students, 3 assessment results, 6 topic materials
+Model stage complete: 3 skill gap(s) extracted, 3 mapped to a learning outcome.
+Estimate stage complete: 9 mastery score(s), 9 study recommendation(s).
 ```
+
+`python -m src.parse.cleaners` still works on its own if you only want
+Connect + Parse (e.g. to inspect the raw imported data before Model/
+Estimate touch it).
+
+## Running the dashboard
+
+```bash
+python -m src.deliver.app
+```
+
+Then open `http://localhost:5000` and pick a demo student (or Staff/
+Admin) on the login screen — see `src.deliver.app`'s docstring for why
+this login is demonstration-level only (no password), not a real
+authentication system; everything downstream of it (authorization,
+consent gating) is the real, tested IOG-42 security layer. Run the
+pipeline first so there's mastery data to show; re-run it any time to
+refresh scores without restarting the server.
 
 ## Running tests
 
@@ -57,19 +79,25 @@ ruff check .
 | Stage | Status | Owner ticket(s) |
 |---|---|---|
 | Connect | Historical dataset loader works; Moodle client is a real HTTP wrapper but needs a real WS token to test against | IOG-33 |
-| Parse | Working - validates + upserts subjects, learning outcomes, rubric criteria, students | IOG-34 |
-| Model (skill-gap extraction, SILO mapping) | Stub, raises `NotImplementedError` | IOG-37, IOG-38 |
-| Estimate (mastery scoring, study recommendations, quizzes) | Stub | IOG-38, IOG-39 |
-| Deliver (dashboard) | Stub, but gated by real IOG-42 security checks (see below) | IOG-40 |
-| Security (encryption, RBAC, audit log, consent) | Implemented as reusable primitives in `src/security/` | IOG-42 |
+| Parse | Working - validates + upserts subjects, learning outcomes, rubric criteria, students, assessment results, topic materials; seeds demo consent | IOG-34 |
+| Model (skill-gap extraction, SILO mapping) | Working - TF-IDF-based extraction + SILO linking (see `src/model/silo_mapping.py`'s docstring for why TF-IDF rather than a hosted LLM) | IOG-37, IOG-38 |
+| Estimate (mastery scoring, study recommendations, engagement) | Working - explainable weighted scoring, fixed-table study method (F7), grounded study material (F8/F9), engagement feedback (F11). Quiz generation (also part of F8) is not yet built. | IOG-38, IOG-39 |
+| Deliver (dashboard) | Working - real Flask app (`python -m src.deliver.app`) showing mastery, gaps, and recommendations per student, behind the real IOG-42 security checks | IOG-40 |
+| Security (encryption, RBAC, audit log, consent) | Implemented as reusable primitives in `src/security/`, and wired end-to-end through the dashboard/Estimate stage above | IOG-42 |
+
+Run `python -m src.pipeline` to execute Connect through Estimate in one
+command, then `python -m src.deliver.app` for the dashboard - see
+"Running the pipeline" / "Running the dashboard" above.
 
 ## Data fields and security controls (N8)
 
 See `docs/DATA_DICTIONARY.md` for the field-by-field notes. Encryption
 at rest, an authorization check, audit logging, and consent gating are
-implemented in `src/security/` (IOG-42) and covered by
-`tests/test_security.py`. What's *not* done yet: there's no login/
-session system for these primitives to sit behind (that's Phase 4/6,
-IOG-40) - `Actor` is constructed directly in code/tests for now rather
-than derived from a real request. Generate your own `ENCRYPTION_KEY`
-before running anything beyond local dev - see `.env.example`.
+implemented in `src/security/` (IOG-42), wired into the Estimate stage
+and the dashboard, and covered by `tests/test_security.py`,
+`tests/test_estimate_mastery.py`, and `tests/test_deliver_dashboard.py`.
+What's *not* done yet: real password/credential authentication - the
+dashboard's login (`src.deliver.app`) is an explicitly-disclosed,
+demonstration-level session (pick a demo student/role, no password),
+not a production auth system. Generate your own `ENCRYPTION_KEY` before
+running anything beyond local dev - see `.env.example`.
