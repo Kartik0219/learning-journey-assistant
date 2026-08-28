@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Consent required{% endblock %}
+{% block content %}
+  <div class="card">
+    <h1>Consent required</h1>
+    <p>
+      This dashboard cannot show student {{ student_id }}'s data because
+      active consent isn't on record for them (N2 — <code>ensure_consent_active</code>
+      blocked this request before any of their rows were read).
+    </p>
+    <p class="muted">
+      If this is unexpected for a demo student, re-run
+      <code>python -m src.parse.cleaners</code>, which seeds consent for the
+      bundled sample dataset.
+    </p>
+  </div>
+{% endblock %}

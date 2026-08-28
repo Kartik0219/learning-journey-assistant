@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Log in — Learning Journey Assistant{% endblock %}
+{% block content %}
+  <div class="card">
+    <h1>Log in</h1>
+    <p class="muted">
+      Demonstration-level login (N1) — no password system exists yet, so this
+      form simply asks who you are. See the docstring in
+      <code>src/deliver/app.py</code> for why. Everything after this screen
+      (access control, consent gating) is the real, tested Phase 5 security
+      layer.
+    </p>
+
+    <form method="post">
+      <fieldset style="border:none; padding:0; margin: 16px 0;">
+        <legend style="font-weight:600; margin-bottom:8px;">I am a...</legend>
+
+        <div style="margin-bottom:10px;">
+          <label>
+            <input type="radio" name="role" value="student" checked>
+            Student —
+          </label>
+          <select name="student_id">
+            {% for s in students %}
+              <option value="{{ s.id }}">{{ s.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="margin-bottom:6px;">
+          <label><input type="radio" name="role" value="staff"> Staff (can view any student)</label>
+        </div>
+        <div>
+          <label><input type="radio" name="role" value="admin"> Administrator (can view any student)</label>
+        </div>
+      </fieldset>
+
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+      <button class="primary" type="submit">Continue</button>
+    </form>
+  </div>
+{% endblock %}
