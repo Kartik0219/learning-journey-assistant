@@ -1,0 +1,192 @@
+"""Tests for Phase 4 (IOG-38 continued, IOG-39): weighted mastery scoring,
+fixed-table study-method selection, grounded study-material generation,
+and the engagement feedback loop (src.estimate.mastery).
+
+Built on the same bundled sample dataset as test_model_silo_mapping.py,
+run through the Model stage first so the gaps these scores weight
+against actually exist - these two phases are not independently
+testable in a way that reflects real behaviour, since F6 explicitly
+depends on F3/F5's output.
+"""
+
+from __future__ import annotations
+
+from src.db.database import get_session
+from src.db.models import AssessmentResult, LearningOutcome, MasteryScore, Student
+from src.estimate.mastery import (
+    STUDY_METHOD_TABLE,
+    calculate_mastery_score,
+    generate_study_material,
+    recommend_study_method,
+    record_engagement,
+)
+from src.model.silo_mapping import extract_skill_gaps, map_gap_to_learning_outcome
+
+
+def _student(session, student_number: str) -> Student:
+    return next(
+        s for s in session.query(Student).all() if s.student_number == student_number
+    )
+
+
+def _run_model_stage(session) -> None:
+    for result in session.query(AssessmentResult).all():
+        for gap in extract_skill_gaps(session, result):
+            map_gap_to_learning_outcome(session, gap)
+
+
+def test_mastery_score_with_no_gaps_equals_assessment_baseline(seeded_db):
+    """DEMO0003 (score 91, positive feedback) has no gaps on any SILO -
+    mastery should equal the raw assessment score with no penalty."""
+    with get_session() as session:
+        _run_model_stage(session)
+        student = _student(session, "DEMO0003")
+        for lo in session.query(LearningOutcome).all():
+            mastery = calculate_mastery_score(session, student, lo)
+            assert mastery.score == 0.91
+            assert "No reviewed skill gaps" in mastery.explanation_text
+            assert "91%" in mastery.explanation_text
+
+
+def test_mastery_score_is_reduced_by_a_reviewed_gap_and_explanation_names_it(seeded_db):
+    """DEMO0001's SILO2 mastery should be reduced from the 72% baseline
+    by severity_weight['low'] * confidence for the one mapped gap, and
+    the explanation text must name the exact evidence quote (F6:
+    "explainable from the evidence")."""
+    with get_session() as session:
+        _run_model_stage(session)
+        student = _student(session, "DEMO0001")
+        silo2 = session.query(LearningOutcome).filter_by(code="SILO2").one()
+
+        mastery = calculate_mastery_score(session, student, silo2)
+
+        assert mastery.score < 0.72  # penalised below the raw baseline
+        assert mastery.score > 0.0
+        assert "the applied technique had a minor error in step 2" in mastery.explanation_text
+        assert "low severity" in mastery.explanation_text
+
+        # SILO1/SILO3 for the same student have no gaps mapped to them -
+        # only the outcome the gap actually maps to should be affected.
+        silo1 = session.query(LearningOutcome).filter_by(code="SILO1").one()
+        mastery1 = calculate_mastery_score(session, student, silo1)
+        assert mastery1.score == 0.72
+
+
+def test_mastery_score_is_clipped_to_zero_and_one(seeded_db):
+    """calculate_mastery_score's formula clips explicitly - verify the
+    clip actually bites rather than trusting the arithmetic never
+    over/undershoots. A student with no assessment results at all should
+    floor at 0.0, never go negative."""
+    with get_session() as session:
+        student = _student(session, "DEMO0001")
+        lo = session.query(LearningOutcome).filter_by(code="SILO1").one()
+
+        # Detach this student's only result from this subject to simulate
+        # "no relevant results yet" without deleting rows other tests rely on.
+        result = session.query(AssessmentResult).filter_by(student_id=student.id).one()
+        result.score = None
+        session.flush()
+
+        mastery = calculate_mastery_score(session, student, lo)
+        assert mastery.score == 0.0
+
+
+def test_recommend_study_method_follows_the_fixed_table(seeded_db):
+    """F7: no model chooses this - it's a pure lookup keyed by the
+    outcome's gap type, and every entry in STUDY_METHOD_TABLE should be
+    reachable from the sample data's three SILOs."""
+    with get_session() as session:
+        outcomes = {lo.code: lo for lo in session.query(LearningOutcome).all()}
+
+        assert recommend_study_method(outcomes["SILO1"]) == STUDY_METHOD_TABLE["conceptual"]
+        assert recommend_study_method(outcomes["SILO2"]) == STUDY_METHOD_TABLE["application"]
+        assert recommend_study_method(outcomes["SILO3"]) == STUDY_METHOD_TABLE["evaluation"]
+
+        assert recommend_study_method(outcomes["SILO1"]) == "worked_example"
+        assert recommend_study_method(outcomes["SILO2"]) == "retrieval_practice"
+        assert recommend_study_method(outcomes["SILO3"]) == "spaced_practice"
+
+
+def test_generate_study_material_is_grounded_in_a_real_topic_material(seeded_db):
+    """F8/F9: the generated text must be built from - and cite - an
+    actual TopicMaterial row, never freely generated prose."""
+    with get_session() as session:
+        student = _student(session, "DEMO0002")
+        silo1 = session.query(LearningOutcome).filter_by(code="SILO1").one()
+
+        recommendation = generate_study_material(session, student, silo1)
+
+        assert recommendation.source_topic_material_id is not None
+        source = recommendation.source_topic_material
+        assert source.subject_id == silo1.subject_id
+        # The recommendation text must actually contain the source
+        # passage verbatim - "grounded", not paraphrased.
+        assert source.passage_text in recommendation.material_text
+        assert source.title in recommendation.material_text
+        assert recommendation.method == "worked_example"
+
+
+def test_generate_study_material_with_no_topic_materials_flags_instead_of_fabricating(
+    seeded_db,
+):
+    """If a subject has zero topic materials, F8/F9 must not invent
+    content - it should say so plainly instead."""
+    with get_session() as session:
+        from src.db.models import Subject, TopicMaterial
+
+        student = _student(session, "DEMO0001")
+        silo1 = session.query(LearningOutcome).filter_by(code="SILO1").one()
+
+        # Remove this subject's topic materials for this one test.
+        subject = session.get(Subject, silo1.subject_id)
+        for material in list(session.query(TopicMaterial).filter_by(subject_id=subject.id)):
+            session.delete(material)
+        session.flush()
+
+        recommendation = generate_study_material(session, student, silo1)
+
+        assert recommendation.source_topic_material_id is None
+        assert "No topic material is available" in recommendation.material_text
+
+
+def test_record_engagement_recalculates_mastery_with_a_capped_bonus(seeded_db):
+    """F11: completing a study recommendation should immediately nudge
+    the affected MasteryScore up by ENGAGEMENT_BONUS_PER_COMPLETION,
+    reflected in both the score and the explanation text - not just
+    logged and left for the next pipeline run."""
+    with get_session() as session:
+        _run_model_stage(session)
+        student = _student(session, "DEMO0002")
+        silo1 = session.query(LearningOutcome).filter_by(code="SILO1").one()
+
+        before = calculate_mastery_score(session, student, silo1)
+        score_before = before.score
+        assert score_before == 0.535
+
+        recommendation = generate_study_material(session, student, silo1)
+        record_engagement(session, student, recommendation, completed=True)
+
+        after = (
+            session.query(MasteryScore)
+            .filter_by(student_id=student.id, learning_outcome_id=silo1.id)
+            .one()
+        )
+        assert after.score == round(score_before + 0.05, 4)
+        assert "completed study practice" in after.explanation_text
+
+
+def test_record_engagement_bonus_is_capped(seeded_db):
+    """Repeated completions of the same recommendation shouldn't be able
+    to inflate mastery past ENGAGEMENT_BONUS_CAP above the base score."""
+    with get_session() as session:
+        _run_model_stage(session)
+        student = _student(session, "DEMO0003")
+        silo1 = session.query(LearningOutcome).filter_by(code="SILO1").one()
+        recommendation = generate_study_material(session, student, silo1)
+
+        for _ in range(10):
+            record_engagement(session, student, recommendation, completed=True)
+
+        final = calculate_mastery_score(session, student, silo1)
+        # Baseline 0.91 + capped bonus 0.15, clipped to 1.0.
+        assert final.score == 1.0
