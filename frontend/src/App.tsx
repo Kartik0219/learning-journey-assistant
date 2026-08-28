@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Sparkles,
   TableProperties,
   X,
 } from 'lucide-react'
@@ -10,11 +11,13 @@ import { useState } from 'react'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardPage } from './pages/DashboardPage'
 import { ResultsOverviewPage } from './pages/ResultsOverviewPage'
+import { StudyPlanPage } from './pages/StudyPlanPage'
 import './App.css'
 
 const navigation = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/' },
   { label: 'Results overview', icon: TableProperties, to: '/results' },
+  { label: 'AI study plan', icon: Sparkles, to: '/study-plan' },
 ]
 
 function App() {
@@ -66,6 +69,7 @@ function App() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/results" element={<ResultsOverviewPage />} />
+        <Route path="/study-plan" element={<StudyPlanPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
