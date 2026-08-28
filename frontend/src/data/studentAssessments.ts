@@ -74,6 +74,37 @@ export const subjectSilos: Record<string, SubjectSilo[]> = {
   ],
 }
 
+export interface AssessmentMapEntry {
+  assessment: string
+  weight: number
+  contribution: 'Individual' | 'Group' | 'Combined'
+  earlyAssessment: boolean
+  hurdle: boolean
+  silos: string
+}
+
+// The "Assessment Map" tab of the CSE results workbook: how each subject's
+// assessments are weighted and which SILOs they cover.
+export const assessmentMap: Record<string, AssessmentMapEntry[]> = {
+  CSE1OOF: [
+    { assessment: 'Test', weight: 0.15, contribution: 'Individual', earlyAssessment: true, hurdle: false, silos: 'SILO1, SILO2' },
+    { assessment: 'Practical demonstration', weight: 0.2, contribution: 'Individual', earlyAssessment: false, hurdle: false, silos: 'SILO2, SILO3, SILO4' },
+    { assessment: 'Assignment', weight: 0.25, contribution: 'Individual', earlyAssessment: false, hurdle: false, silos: 'SILO2, SILO3, SILO4' },
+    { assessment: 'Central examination', weight: 0.4, contribution: 'Individual', earlyAssessment: false, hurdle: false, silos: 'SILO1, SILO2, SILO3, SILO4' },
+  ],
+  CSE2ALG: [
+    { assessment: 'Test', weight: 0.2, contribution: 'Individual', earlyAssessment: true, hurdle: false, silos: 'SILO1, SILO2, SILO3' },
+    { assessment: 'Assignment', weight: 0.3, contribution: 'Individual', earlyAssessment: false, hurdle: false, silos: 'SILO2, SILO3, SILO4, SILO5' },
+    { assessment: 'Central examination', weight: 0.5, contribution: 'Individual', earlyAssessment: false, hurdle: false, silos: 'SILO1, SILO2, SILO3, SILO5' },
+  ],
+  CSE3CAP: [
+    { assessment: 'Oral presentation: Project Milestone Presentation', weight: 0.1, contribution: 'Group', earlyAssessment: true, hurdle: false, silos: 'SILO3' },
+    { assessment: 'Oral presentation: Final Project Presentation', weight: 0.2, contribution: 'Group', earlyAssessment: false, hurdle: false, silos: 'SILO3' },
+    { assessment: 'Assignment: Final written Project Report', weight: 0.35, contribution: 'Combined', earlyAssessment: false, hurdle: false, silos: 'SILO2, SILO4' },
+    { assessment: 'Assignment: Sprint Project management reports', weight: 0.35, contribution: 'Individual', earlyAssessment: false, hurdle: false, silos: 'SILO1, SILO2' },
+  ],
+}
+
 export const studentSummary = {
   id: 'STU0001',
   averageTotal: 49.95,

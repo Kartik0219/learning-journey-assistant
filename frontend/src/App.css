@@ -12,7 +12,10 @@
 .nav-item { text-decoration: none; }.content-grid { align-items: start; display: grid; gap: 18px; grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); }.panel { background: #fff; border: 1px solid #e3e8f4; border-radius: 8px; padding: 21px; }.outcome-list { display: grid; gap: 3px; }.outcome { background: transparent; border: 2px solid transparent; border-radius: 7px; cursor: pointer; display: grid; font: inherit; gap: 8px 12px; grid-template-columns: minmax(0, 1fr) auto; padding: 10px; text-align: left; }.outcome:hover { background: #f6f8fd; }.outcome.selected { background: #eef2fc; border-color: #cadcfc; }.outcome-name { color: #20263d; font-size: 13px; font-weight: 700; }.status { border-radius: 999px; font-size: 10px; font-weight: 800; justify-self: end; padding: 4px 8px; text-transform: uppercase; }.status.strong { background: #ddf3ec; color: #00806e; }.status.onTrack { background: #e5eafa; color: #1e2761; }.status.focusArea { background: #fcebd5; color: #c9791a; }.progress-track { background: #eaeef8; border-radius: 999px; height: 8px; overflow: hidden; }.progress-fill { border-radius: inherit; display: block; height: 100%; }.progress-fill.strong, .progress-fill.onTrack { background: #00a38c; }.progress-fill.focusArea { background: #f2a340; }.outcome-percentage { align-self: center; color: #20263d; font-family: Georgia, serif; font-size: 14px; }.evidence-card { background: #1e2761; border-radius: 8px; color: #fff; margin-top: 18px; padding: 20px; }.evidence-card h3 { color: #fff; font-family: Georgia, serif; font-size: 20px; margin: 0; }.evidence-label { color: #cadcfc; }.evidence-meta { color: #b9c2e6; font-size: 12px; margin: 4px 0 14px; }.evidence-block { background: rgba(255,255,255,.08); border-radius: 6px; margin-top: 10px; padding: 12px; }.evidence-block > p { color: #cadcfc; font-size: 10px; font-weight: 800; margin: 0 0 6px; text-transform: uppercase; }.evidence-row { display: flex; font-size: 13px; justify-content: space-between; padding: 3px 0; }.evidence-block q { color: #f3f5ff; font-size: 13px; font-style: italic; line-height: 1.45; }.recommended-action { align-items: flex-start; color: #f3f5ff; display: flex; font-size: 13px; gap: 9px; line-height: 1.4; margin-top: 14px; }.recommended-action svg { color: #00a38c; flex: none; }.right-column { display: grid; gap: 18px; }.trend-panel { min-height: 220px; }.chart-wrap { height: 116px; }.chart-caption { color: #6e7591; display: flex; font-size: 11px; justify-content: space-between; }.steps, .resources { list-style: none; margin: 0; padding: 0; }.steps li { border-top: 1px solid #e3e8f4; display: flex; gap: 11px; padding: 11px 0; }.steps li:first-child { border-top: 0; padding-top: 0; }.steps li > span { align-items: center; background: #1e2761; border-radius: 50%; color: #fff; display: flex; flex: none; font-family: Georgia, serif; font-size: 12px; font-weight: bold; height: 24px; justify-content: center; width: 24px; }.steps p { color: #20263d; font-size: 13px; line-height: 1.45; margin: 1px 0 0; }.resources { display: grid; gap: 10px; }.resources li { align-items: center; display: flex; gap: 10px; }.resources li span { background: #00a38c; border-radius: 2px; height: 8px; width: 8px; }.resources a { color: #1e2761; font-size: 13px; font-weight: 700; text-decoration: none; }.resources a:hover { text-decoration: underline; }.sr-only { height: 1px; margin: -1px; overflow: hidden; position: absolute; width: 1px; }
 @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
 
-.results-panel table { min-width: 1180px; }
+/* Let .table-scroll be the horizontal-scroll boundary: without min-width:0 the
+   grid items refuse to shrink below the 1180px table and blow out the layout. */
+.results-panel, .subject-results, .subject-section { min-width: 0; }
+.results-panel table { min-width: 920px; }
 .results-panel th:nth-child(1), .results-panel td:nth-child(1) { width: 17%; }
 .results-panel th:nth-child(2), .results-panel td:nth-child(2) { width: 7%; }
 .results-panel th:nth-child(3), .results-panel td:nth-child(3) { width: 29%; }
@@ -26,7 +29,14 @@
 .results-subject-picker .picker-label { color: #00806e; font-size: 13px; white-space: nowrap; }
 .results-subject-picker select { border-color: #e3e8f4; font-size: 15px; min-width: 230px; padding: 12px 14px; }
 
-@media (max-width: 700px) {
+/* Choose subject: wider control, pinned to the right of the header row. */
+.results-header { grid-template-columns: 1fr auto; }
+.results-header .header-spacer { display: none; }
+.results-header .header-actions { justify-self: end; }
+.results-subject-picker select { flex: 1; max-width: none; min-width: 320px; }
+@media (max-width: 620px) { .results-subject-picker select { min-width: 0; } }
+
+@media (max-width: 900px) {
 	.results-panel .table-scroll { border: 0; overflow: visible; }
 	.results-panel table, .results-panel tbody, .results-panel tr, .results-panel th, .results-panel td { display: block; min-width: 0; width: 100% !important; }
 	.results-panel table { table-layout: auto; }
@@ -53,7 +63,28 @@
 .silo-panel th:nth-child(1), .silo-panel td:nth-child(1) { text-align: left; white-space: nowrap; width: 120px; }
 .silo-panel th:nth-child(2), .silo-panel td:nth-child(2) { overflow-wrap: anywhere; text-align: left; width: auto; }
 
-@media (max-width: 700px) {
+@media (max-width: 900px) {
 	.silo-panel tbody th::before { content: 'SILO'; }
 	.silo-panel tbody td:nth-child(2)::before { content: 'Description'; }
+}
+
+/* "Assessment map" table - 6 short columns; retune the generic .results-panel
+   widths/labels which are shaped for the Assessment results table. */
+.map-panel table { min-width: 560px; }
+.map-panel th, .map-panel td { text-align: left; }
+.map-panel th:nth-child(1), .map-panel td:nth-child(1) { width: 28%; }
+.map-panel th:nth-child(2), .map-panel td:nth-child(2) { width: 9%; }
+.map-panel th:nth-child(3), .map-panel td:nth-child(3) { width: 16%; }
+.map-panel th:nth-child(4), .map-panel td:nth-child(4) { width: 14%; }
+.map-panel th:nth-child(5), .map-panel td:nth-child(5) { width: 10%; }
+.map-panel th:nth-child(6), .map-panel td:nth-child(6) { width: 23%; }
+.map-panel .silos { overflow-wrap: anywhere; }
+
+@media (max-width: 900px) {
+	.map-panel tbody th::before { content: 'Assessment'; }
+	.map-panel tbody td:nth-child(2)::before { content: 'Weight'; }
+	.map-panel tbody td:nth-child(3)::before { content: 'Contribution'; }
+	.map-panel tbody td:nth-child(4)::before { content: 'Early assessment'; }
+	.map-panel tbody td:nth-child(5)::before { content: 'Hurdle'; }
+	.map-panel tbody td:nth-child(6)::before { content: 'SILOs'; }
 }
