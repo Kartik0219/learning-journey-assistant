@@ -65,19 +65,20 @@ function buildSubject(code: string): DashboardSubject {
     const sumWeighted = contributing.reduce((total, a) => total + a.score * a.weight, 0)
     const masteryPercentage = sumWeight ? round(sumWeighted / sumWeight) : 0
     const { status, statusLabel } = band(masteryPercentage)
-    const weakestContribution = [...contributing].sort((a, b) => a.score - b.score)[0]
+    // Weakest-scoring assessment first - its feedback is the most actionable.
+    const byScore = [...contributing].sort((a, b) => a.score - b.score)
 
     return {
       name: siloName(silo.id, silo.description),
       masteryPercentage,
       status,
       statusLabel,
-      evidence: contributing.map((a) => ({
-        label: `${a.assessment} (${Math.round(a.weight * 100)}%)`,
-        score: `${a.score} / 100`,
+      assessments: byScore.map((a) => ({
+        name: a.assessment,
+        weightPct: Math.round(a.weight * 100),
+        score: a.score,
+        feedback: a.feedback,
       })),
-      feedback: weakestContribution?.feedback ?? 'No assessment evidence recorded for this outcome yet.',
-      feedbackSource: weakestContribution?.assessment,
       recommendedAction: actionFor(statusLabel),
     }
   })

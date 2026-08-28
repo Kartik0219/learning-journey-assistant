@@ -17,9 +17,9 @@ export interface LearningOutcome {
   masteryPercentage: number
   status: MasteryStatus
   statusLabel: string
-  evidence: EvidenceItem[]
-  feedback: string
-  feedbackSource?: string
+  evidence?: EvidenceItem[]
+  feedback?: string
+  assessments?: { name: string; weightPct: number; score: number; feedback: string }[]
   recommendedAction: string
 }
 
