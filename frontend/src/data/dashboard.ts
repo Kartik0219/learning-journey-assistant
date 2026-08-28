@@ -19,7 +19,7 @@ export interface LearningOutcome {
   statusLabel: string
   evidence?: EvidenceItem[]
   feedback?: string
-  assessments?: { name: string; weightPct: number; score: number; feedback: string }[]
+  assessments?: { name: string; weightPct: number; score: number; feedback: string; silos: string[] }[]
   recommendedAction: string
 }
 

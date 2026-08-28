@@ -23,6 +23,15 @@ function band(pct: number): { status: MasteryStatus; statusLabel: string } {
   return { status: 'atRisk', statusLabel: 'At risk' }
 }
 
+// Grade band for a subject's weighted total (shared with the Results overview page).
+export function performanceBand(total: number): string {
+  if (total < 50) return 'Fail'
+  if (total < 60) return 'Pass'
+  if (total < 70) return 'Credit'
+  if (total < 80) return 'Distinction'
+  return 'High Distinction'
+}
+
 function actionFor(statusLabel: string): string {
   switch (statusLabel) {
     case 'Mastered':
@@ -78,6 +87,7 @@ function buildSubject(code: string): DashboardSubject {
         weightPct: Math.round(a.weight * 100),
         score: a.score,
         feedback: a.feedback,
+        silos: siloIds(a.silos).sort(),
       })),
       recommendedAction: actionFor(statusLabel),
     }
