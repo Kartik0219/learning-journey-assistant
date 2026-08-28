@@ -1,10 +1,10 @@
 """Shared database schema.
 
-Covers the domain entities needed to prepare data for Phase 1 (IOG-33,
-IOG-34) and to give Phase 3/4 something concrete to build against:
-subjects, learning outcomes (SILOs), rubrics, students, assessment
-results, extracted skill gaps, and mastery scores - plus the two
-compliance records (consent, audit log) called for by N2 and N4.
+Covers the domain entities for the whole five-stage pipeline: subjects,
+learning outcomes (SILOs), rubrics, students, assessment results,
+extracted skill gaps, mastery scores, topic materials, generated study
+recommendations, and study engagement - plus the two compliance records
+(consent, audit log) called for by N2 and N4.
 
 Privacy note (IOG-42 / Phase 5): `Student.student_number` and
 `Student.display_name` are encrypted at rest (N3) via
@@ -12,10 +12,10 @@ Privacy note (IOG-42 / Phase 5): `Student.student_number` and
 for how the companion `student_number_hash` column keeps lookups
 working on an encrypted column. Authorization (N6), audit logging (N4),
 and consent gating (N2) are implemented as reusable primitives in
-`src.security` but are not wired into a live web request yet, because
-there is no dashboard/API for them to protect (that's IOG-40, Phase 4).
-`feedback_text` below is still plain-text on purpose - see its own
-comment.
+`src.security` and are wired into the dashboard (`src.deliver.app`,
+IOG-40) as the gate every request goes through before touching a
+student's rows. `feedback_text` below is still plain-text on purpose -
+see its own comment.
 """
 
 from __future__ import annotations
@@ -210,6 +210,11 @@ class SkillGap(Base):
     severity: Mapped[str] = mapped_column(String(20))  # e.g. "low" / "medium" / "high"
     confidence: Mapped[float] = mapped_column(Float)  # 0.0-1.0
     reviewed: Mapped[bool] = mapped_column(Boolean, default=False)
+    # F7: "recommend a study method from a fixed table ... according to the
+    # type of gap". Populated by src.model.silo_mapping from the verb of the
+    # learning outcome the gap maps to (see that module's GAP_TYPE_METHODS
+    # table) - null until a learning outcome has been assigned.
+    gap_type: Mapped[str | None] = mapped_column(String(20), default=None)
 
     assessment_result: Mapped[AssessmentResult] = relationship(back_populates="skill_gaps")
     learning_outcome: Mapped[LearningOutcome | None] = relationship()
@@ -234,6 +239,71 @@ class MasteryScore(Base):
 
     student: Mapped[Student] = relationship(back_populates="mastery_scores")
     learning_outcome: Mapped[LearningOutcome] = relationship()
+
+
+class TopicMaterial(Base):
+    """F9: subject topic materials, pre-split into short passages so the
+    Estimate stage can retrieve the closest one and cite it as a source
+    reference (F8's "check each generated item against the subject
+    materials before it is shown" starts here - grounding by retrieval,
+    not by asking a model to recall the material from memory).
+    """
+
+    __tablename__ = "topic_materials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    subject_id: Mapped[int] = mapped_column(ForeignKey("subjects.id"))
+    learning_outcome_id: Mapped[int | None] = mapped_column(
+        ForeignKey("learning_outcomes.id"), default=None
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    passage_text: Mapped[str] = mapped_column(Text)
+
+    subject: Mapped[Subject] = relationship()
+    learning_outcome: Mapped[LearningOutcome | None] = relationship()
+
+
+class StudyRecommendation(Base):
+    """F7/F8: one generated study recommendation for a student on a
+    learning outcome - the study method (from the fixed table, F7) plus
+    grounded material text retrieved from a TopicMaterial passage (F8/F9).
+    """
+
+    __tablename__ = "study_recommendations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"))
+    learning_outcome_id: Mapped[int] = mapped_column(ForeignKey("learning_outcomes.id"))
+    # retrieval_practice / spaced_practice / worked_example
+    method: Mapped[str] = mapped_column(String(30))
+    material_text: Mapped[str] = mapped_column(Text)
+    source_topic_material_id: Mapped[int | None] = mapped_column(
+        ForeignKey("topic_materials.id"), default=None
+    )
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    student: Mapped[Student] = relationship()
+    learning_outcome: Mapped[LearningOutcome] = relationship()
+    source_topic_material: Mapped[TopicMaterial | None] = relationship()
+
+
+class StudyEngagement(Base):
+    """F11: "store how the student engages with the recommended study
+    materials and the plan, and use that information to update mastery
+    estimates." One row per interaction; src.estimate.mastery reads these
+    back in to nudge the relevant MasteryScore.
+    """
+
+    __tablename__ = "study_engagements"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"))
+    study_recommendation_id: Mapped[int] = mapped_column(ForeignKey("study_recommendations.id"))
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    engaged_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    student: Mapped[Student] = relationship()
+    study_recommendation: Mapped[StudyRecommendation] = relationship()
 
 
 class AuditLogEntry(Base):
