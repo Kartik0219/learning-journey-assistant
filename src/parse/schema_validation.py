@@ -79,3 +79,23 @@ class AssessmentResultRecord(BaseModel):
     @classmethod
     def uppercase_code(cls, v: str) -> str:
         return v.strip().upper()
+
+
+class TopicMaterialRecord(BaseModel):
+    """F1/F9: subject topic materials, split into short passages so Phase 4
+    can retrieve and cite the closest one when generating study material."""
+
+    subject_code: str
+    silo_code: str | None = None
+    title: str = Field(min_length=1, max_length=200)
+    passage_text: str = Field(min_length=1)
+
+    @field_validator("subject_code")
+    @classmethod
+    def uppercase_code(cls, v: str) -> str:
+        return v.strip().upper()
+
+    @field_validator("silo_code")
+    @classmethod
+    def uppercase_optional_code(cls, v: str | None) -> str | None:
+        return v.strip().upper() if v else None

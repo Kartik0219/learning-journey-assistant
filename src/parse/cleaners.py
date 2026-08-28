@@ -23,14 +23,26 @@ from sqlalchemy.orm import Session
 from src.common.logging_config import configure_logging, get_logger
 from src.connect import historical_dataset_loader as loader
 from src.db.database import get_session, init_db
-from src.db.models import LearningOutcome, Rubric, RubricCriterion, Student, Subject
+from src.db.models import (
+    Assessment,
+    AssessmentResult,
+    LearningOutcome,
+    Rubric,
+    RubricCriterion,
+    Student,
+    Subject,
+    TopicMaterial,
+)
 from src.parse.schema_validation import (
+    AssessmentResultRecord,
     LearningOutcomeRecord,
     RubricCriterionRecord,
     StudentRecord,
     SubjectRecord,
+    TopicMaterialRecord,
 )
 from src.security.audit import log_event
+from src.security.consent import record_consent
 from src.security.encryption import blind_index
 
 logger = get_logger(__name__)
@@ -131,6 +143,98 @@ def upsert_rubric_criterion(session: Session, record: RubricCriterionRecord) -> 
     return criterion
 
 
+def upsert_assessment_result(session: Session, record: AssessmentResultRecord) -> AssessmentResult:
+    """F1/F2: load the grade + written feedback that Phase 3 extracts
+    skill gaps from. Creates the parent Assessment row on first sight of
+    an (subject, assessment_name) pair, then upserts the per-student
+    result under it."""
+    subject = session.query(Subject).filter_by(code=record.subject_code).one()
+    assessment = (
+        session.query(Assessment)
+        .filter_by(subject_id=subject.id, name=record.assessment_name)
+        .one_or_none()
+    )
+    if assessment is None:
+        assessment = Assessment(subject_id=subject.id, name=record.assessment_name)
+        session.add(assessment)
+        session.flush()
+
+    student_hash = blind_index(record.student_number)
+    student = session.query(Student).filter_by(student_number_hash=student_hash).one()
+
+    existing = (
+        session.query(AssessmentResult)
+        .filter_by(assessment_id=assessment.id, student_id=student.id)
+        .one_or_none()
+    )
+    if existing:
+        existing.score = record.score
+        existing.feedback_text = record.feedback_text
+        return existing
+
+    result = AssessmentResult(
+        assessment_id=assessment.id,
+        student_id=student.id,
+        score=record.score,
+        feedback_text=record.feedback_text,
+    )
+    session.add(result)
+    session.flush()
+    return result
+
+
+def upsert_topic_material(session: Session, record: TopicMaterialRecord) -> TopicMaterial:
+    """F9: load a subject topic-material passage. Idempotent on
+    (subject, title) so re-running the pipeline doesn't duplicate rows."""
+    subject = session.query(Subject).filter_by(code=record.subject_code).one()
+
+    learning_outcome_id = None
+    if record.silo_code:
+        outcome = (
+            session.query(LearningOutcome)
+            .filter_by(subject_id=subject.id, code=record.silo_code)
+            .one_or_none()
+        )
+        learning_outcome_id = outcome.id if outcome else None
+
+    existing = (
+        session.query(TopicMaterial)
+        .filter_by(subject_id=subject.id, title=record.title)
+        .one_or_none()
+    )
+    if existing:
+        existing.learning_outcome_id = learning_outcome_id
+        existing.passage_text = record.passage_text
+        return existing
+
+    material = TopicMaterial(
+        subject_id=subject.id,
+        learning_outcome_id=learning_outcome_id,
+        title=record.title,
+        passage_text=record.passage_text,
+    )
+    session.add(material)
+    return material
+
+
+def seed_demo_consent(session: Session, students: list[Student]) -> int:
+    """N2/F2 demo-data note: the bundled sample dataset represents already-
+    consented demo students (there is no real consent-collection UI yet -
+    that depends on Phase 4/6's login system, IOG-40). Consent is still
+    recorded through the real `record_consent()` API - same code path a
+    genuine consent flow would use, same audit-log entry written - rather
+    than bypassed. This only runs for students that don't already have a
+    consent record, so it's safe to call on every pipeline run.
+    """
+    seeded = 0
+    for student in students:
+        if student.consent is not None:
+            continue
+        record_consent(session, student, given=True)
+        seeded += 1
+    return seeded
+
+
 def run_parse_stage() -> None:
     """End-to-end: load sample/historical data, validate, load into DB."""
     configure_logging()
@@ -140,6 +244,8 @@ def run_parse_stage() -> None:
     learning_outcomes = _validate_rows(loader.load_learning_outcomes(), LearningOutcomeRecord)
     rubric_criteria = _validate_rows(loader.load_rubrics(), RubricCriterionRecord)
     students = _validate_rows(loader.load_students(), StudentRecord)
+    assessment_results = _validate_rows(loader.load_assessment_results(), AssessmentResultRecord)
+    topic_materials = _validate_rows(loader.load_topic_materials(), TopicMaterialRecord)
 
     with get_session() as session:
         for record in subjects:
@@ -148,8 +254,13 @@ def run_parse_stage() -> None:
             upsert_learning_outcome(session, record)
         for record in rubric_criteria:
             upsert_rubric_criterion(session, record)
-        for record in students:
-            upsert_student(session, record)
+        loaded_students = [upsert_student(session, record) for record in students]
+        for record in assessment_results:
+            upsert_assessment_result(session, record)
+        for record in topic_materials:
+            upsert_topic_material(session, record)
+
+        consented = seed_demo_consent(session, loaded_students)
 
         # N4: audit log must record every data import.
         log_event(
@@ -158,16 +269,21 @@ def run_parse_stage() -> None:
             action="data_import",
             target=(
                 f"{len(subjects)} subjects, {len(learning_outcomes)} learning outcomes, "
-                f"{len(rubric_criteria)} rubric criteria, {len(students)} students"
+                f"{len(rubric_criteria)} rubric criteria, {len(students)} students, "
+                f"{len(assessment_results)} assessment results, "
+                f"{len(topic_materials)} topic materials ({consented} consent records seeded)"
             ),
         )
 
     logger.info(
-        "Parse stage complete: %d subjects, %d learning outcomes, %d rubric criteria, %d students",
+        "Parse stage complete: %d subjects, %d learning outcomes, %d rubric criteria, "
+        "%d students, %d assessment results, %d topic materials",
         len(subjects),
         len(learning_outcomes),
         len(rubric_criteria),
         len(students),
+        len(assessment_results),
+        len(topic_materials),
     )
 
 
