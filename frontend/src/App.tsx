@@ -12,6 +12,8 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardPage } from './pages/DashboardPage'
 import { ResultsOverviewPage } from './pages/ResultsOverviewPage'
 import { StudyPlanPage } from './pages/StudyPlanPage'
+import { StudentPicker } from './StudentPicker'
+import { StudentProvider } from './studentContext'
 import './App.css'
 
 const navigation = [
@@ -20,7 +22,7 @@ const navigation = [
   { label: 'AI study plan', icon: Sparkles, to: '/study-plan' },
 ]
 
-function App() {
+function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   const closeMenu = () => setMenuOpen(false)
 
@@ -48,7 +50,7 @@ function App() {
             {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
           </button>
           <div className="topbar-user">
-            <span className="user-name">Student STU0001</span>
+            <StudentPicker />
             <button className="logout-btn" type="button" onClick={handleLogOff}>
               <LogOut size={15} aria-hidden="true" />
               Log off
@@ -73,6 +75,14 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <StudentProvider>
+      <AppShell />
+    </StudentProvider>
   )
 }
 

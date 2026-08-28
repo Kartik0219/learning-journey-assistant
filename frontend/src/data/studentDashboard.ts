@@ -6,7 +6,7 @@
 // over the assessments whose SILO list includes that outcome. Bands:
 //   < 50  At risk   ·  50–65  Developing  ·  65–80  Proficient  ·  ≥ 80  Mastered
 import type { DashboardSubject, LearningOutcome, MasteryStatus } from './dashboard'
-import { studentResults, studentSummary, subjectSilos } from './studentAssessments'
+import { subjectSilos, type SubjectResults } from './studentAssessments'
 
 function siloIds(text: string): string[] {
   return Array.from(new Set(text.match(/SILO\d+/g) ?? []))
@@ -49,22 +49,13 @@ function siloName(id: string, description: string): string {
   return `${id} · ${description}`
 }
 
-function buildSubject(code: string): DashboardSubject {
-  const results = studentResults.find((subject) => subject.code === code)
+function shortTopic(description: string): string {
+  return description.split(/;|,| to | and /)[0].trim()
+}
+
+function buildSubject(results: SubjectResults): DashboardSubject {
+  const code = results.code
   const silos = subjectSilos[code] ?? []
-  if (!results) {
-    return {
-      code,
-      label: code,
-      overallMasteryPercentage: 0,
-      priorityFocusAreas: 0,
-      assessmentsAnalysed: 0,
-      masteryTrend: [],
-      nextSteps: [],
-      recommendedResources: [],
-      learningOutcomes: [],
-    }
-  }
 
   const learningOutcomes: LearningOutcome[] = silos.map((silo) => {
     const contributing = results.assessments.filter((assessment) =>
@@ -76,6 +67,8 @@ function buildSubject(code: string): DashboardSubject {
     const { status, statusLabel } = band(masteryPercentage)
     // Weakest-scoring assessment first - its feedback is the most actionable.
     const byScore = [...contributing].sort((a, b) => a.score - b.score)
+    const topic = shortTopic(silo.description)
+    const weakestTask = byScore[0]?.assessment
 
     return {
       name: siloName(silo.id, silo.description),
@@ -90,6 +83,28 @@ function buildSubject(code: string): DashboardSubject {
         silos: siloIds(a.silos).sort(),
       })),
       recommendedAction: actionFor(statusLabel),
+      nextSteps: [
+        {
+          text: 'Rework ',
+          emphasis: weakestTask ?? 'your lowest-scoring task',
+          suffix: ` with the ${silo.id} marker feedback open beside you.`,
+        },
+        {
+          text: 'Complete an adaptive quiz targeting ',
+          emphasis: silo.id,
+          suffix: ' (6 questions, aimed at this outcome).',
+        },
+        {
+          text: 'Summarise the subject notes on ',
+          emphasis: topic,
+          suffix: ' in your own words, then re-attempt a past question.',
+        },
+      ],
+      recommendedResources: [
+        `${silo.id} refresher — ${topic}`,
+        `Worked examples for ${silo.id}`,
+        `Practice set on ${topic}, self-marked against the rubric`,
+      ],
     }
   })
 
@@ -141,8 +156,8 @@ function buildSubject(code: string): DashboardSubject {
   }
 }
 
-export const studentDashboardId = studentSummary.id
-
-export const studentDashboardSubjects: Record<string, DashboardSubject> = Object.fromEntries(
-  studentResults.map((subject) => [subject.code, buildSubject(subject.code)]),
-)
+export function buildStudentDashboardSubjects(
+  results: SubjectResults[],
+): Record<string, DashboardSubject> {
+  return Object.fromEntries(results.map((subject) => [subject.code, buildSubject(subject)]))
+}

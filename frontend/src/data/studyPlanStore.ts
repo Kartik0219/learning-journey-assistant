@@ -34,14 +34,18 @@ function writeAll(map: SnapshotMap): void {
   }
 }
 
-export function loadSnapshot(subjectCode: string): StudyPlanSnapshot | null {
-  const snap = readAll()[subjectCode]
+function key(studentId: string, subjectCode: string): string {
+  return `${studentId}::${subjectCode}`
+}
+
+export function loadSnapshot(studentId: string, subjectCode: string): StudyPlanSnapshot | null {
+  const snap = readAll()[key(studentId, subjectCode)]
   if (!snap || !Array.isArray(snap.plans) || typeof snap.generatedAt !== 'string') return null
   return snap
 }
 
-export function saveSnapshot(snapshot: StudyPlanSnapshot): void {
+export function saveSnapshot(studentId: string, snapshot: StudyPlanSnapshot): void {
   const map = readAll()
-  map[snapshot.subjectCode] = snapshot
+  map[key(studentId, snapshot.subjectCode)] = snapshot
   writeAll(map)
 }

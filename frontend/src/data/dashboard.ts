@@ -21,6 +21,8 @@ export interface LearningOutcome {
   feedback?: string
   assessments?: { name: string; weightPct: number; score: number; feedback: string; silos: string[] }[]
   recommendedAction: string
+  nextSteps?: StudyStep[]
+  recommendedResources?: string[]
 }
 
 export interface StudyStep {

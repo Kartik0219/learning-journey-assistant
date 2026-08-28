@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BookOpen, Brain, ListChecks, Sparkles } from 'lucide-react'
-import { studentDashboardId, studentDashboardSubjects } from '../data/studentDashboard'
-import { assessmentFingerprint, buildStudyPlan, studyPlanSubjectCodes, type SiloPlan } from '../data/studyPlan'
+import { buildStudentDashboardSubjects } from '../data/studentDashboard'
+import { assessmentFingerprint, buildStudyPlan, type SiloPlan } from '../data/studyPlan'
 import { loadSnapshot, saveSnapshot } from '../data/studyPlanStore'
+import { Dropdown } from '../Dropdown'
+import { useStudent } from '../studentContext'
 
 type Stage = 'idle' | 'working' | 'ready'
 
@@ -13,7 +15,12 @@ function formatWhen(iso: string | null): string {
 }
 
 export function StudyPlanPage() {
-  const [subjectCode, setSubjectCode] = useState(studyPlanSubjectCodes[0])
+  const { studentId, results } = useStudent()
+  const subjects = useMemo(() => buildStudentDashboardSubjects(results), [results])
+  const subjectCodes = useMemo(() => Object.keys(subjects), [subjects])
+
+  const [subjectCode, setSubjectCode] = useState(subjectCodes[0])
+  const activeCode = subjects[subjectCode] ? subjectCode : subjectCodes[0]
   const [stage, setStage] = useState<Stage>('idle')
   const [tab, setTab] = useState<'summary' | 'plan'>('summary')
   const [plans, setPlans] = useState<SiloPlan[]>([])
@@ -21,13 +28,13 @@ export function StudyPlanPage() {
   const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null)
   const timer = useRef<number | undefined>(undefined)
 
-  const currentFingerprint = assessmentFingerprint(subjectCode)
+  const currentFingerprint = assessmentFingerprint(subjects, activeCode)
   const isStale = savedFingerprint !== currentFingerprint
 
-  // Load any saved snapshot for this subject before doing anything else.
+  // Load any saved snapshot for this student + subject before doing anything else.
   useEffect(() => {
     window.clearTimeout(timer.current)
-    const saved = loadSnapshot(subjectCode)
+    const saved = loadSnapshot(studentId, activeCode)
     if (saved) {
       setPlans(saved.plans)
       setGeneratedAt(saved.generatedAt)
@@ -42,7 +49,7 @@ export function StudyPlanPage() {
       setTab('summary')
     }
     return () => window.clearTimeout(timer.current)
-  }, [subjectCode])
+  }, [studentId, activeCode])
 
   function run() {
     window.clearTimeout(timer.current)
@@ -50,14 +57,14 @@ export function StudyPlanPage() {
     // Placeholder: one pass = AI summarises + maps feedback, then the plan is
     // assembled from the pre-built catalogue. No live model call yet.
     timer.current = window.setTimeout(() => {
-      const fresh = buildStudyPlan(subjectCode)
+      const fresh = buildStudyPlan(subjects, activeCode)
       const now = new Date().toISOString()
       setPlans(fresh)
       setGeneratedAt(now)
       setSavedFingerprint(currentFingerprint)
       setStage('ready')
       setTab('plan')
-      saveSnapshot({ subjectCode, generatedAt: now, sourceFingerprint: currentFingerprint, plans: fresh })
+      saveSnapshot(studentId, { subjectCode: activeCode, generatedAt: now, sourceFingerprint: currentFingerprint, plans: fresh })
     }, 1000)
   }
 
@@ -73,9 +80,9 @@ export function StudyPlanPage() {
 
   return <main className="dashboard" id="study-plan">
     <header className="dashboard-header results-header">
-      <div><p className="eyebrow">Student {studentDashboardId} · study plan</p><h1>Study plan — powered by AI</h1></div>
+      <div><p className="eyebrow">Student {studentId} · study plan</p><h1>Study plan — powered by AI</h1></div>
       <div className="header-actions">
-        <label className="subject-picker results-subject-picker"><span className="picker-label">Choose subject</span><select value={subjectCode} onChange={(event) => setSubjectCode(event.target.value)}>{studyPlanSubjectCodes.map((code) => <option value={code} key={code}>{studentDashboardSubjects[code].label}</option>)}</select></label>
+        <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={subjectCodes.map((code) => ({ value: code, label: subjects[code].label }))} onChange={setSubjectCode} />
       </div>
       <div className="header-spacer" aria-hidden="true" />
     </header>
@@ -85,7 +92,7 @@ export function StudyPlanPage() {
         <Sparkles size={16} aria-hidden="true" />
         {buttonLabel}
       </button>
-      <span className="generate-hint">Summarises your marker feedback for {subjectCode} and assembles a plan from the pre-built resource catalogue.</span>
+      <span className="generate-hint">Summarises your marker feedback for {activeCode} and assembles a plan from the pre-built resource catalogue.</span>
     </div>
 
     {generatedAt && <p className="generate-meta">Generated {formatWhen(generatedAt)} · saved on this device · {isStale ? 'new assessment data available — regenerate to refresh' : 'up to date with your assessments'}</p>}
@@ -93,7 +100,7 @@ export function StudyPlanPage() {
     <p className="ai-note"><Sparkles size={15} aria-hidden="true" /> AI is used only to summarise marker feedback and map it to SILOs. Resources, activities and quizzes are pre-built and lecturer-reviewed — not generated on request — so the plan stays grounded and consistent. Formative only.</p>
 
     {stage === 'idle' && <section className="panel plan-empty"><p>Nothing generated yet. Choose <strong>Analyse and generate study plan</strong> to summarise your feedback and build a plan.</p></section>}
-    {stage === 'working' && <section className="panel plan-empty"><p>Summarising {subjectCode} feedback, mapping it to each SILO, and assembling the plan…</p></section>}
+    {stage === 'working' && <section className="panel plan-empty"><p>Summarising {activeCode} feedback, mapping it to each SILO, and assembling the plan…</p></section>}
 
     {ready && <>
       <div className="subtabs" role="tablist" aria-label="Study plan sections">

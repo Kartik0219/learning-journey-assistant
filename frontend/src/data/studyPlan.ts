@@ -5,8 +5,9 @@
 // activities and quizzes are PRE-BUILT / lecturer-reviewed - selected per SILO,
 // never generated at request time - so outputs stay grounded, consistent and
 // reviewable. This module is a placeholder for that pipeline.
-import type { MasteryStatus } from './dashboard'
-import { studentDashboardSubjects } from './studentDashboard'
+import type { DashboardSubject, MasteryStatus } from './dashboard'
+
+type DashboardSubjects = Record<string, DashboardSubject>
 
 export interface AssessmentFeedback {
   name: string
@@ -33,12 +34,10 @@ function shortTopic(description: string): string {
   return description.split(/;|,| to | and /)[0].trim()
 }
 
-export const studyPlanSubjectCodes = Object.keys(studentDashboardSubjects)
-
 // Stable fingerprint of the assessment inputs for a subject (scores, weights,
 // feedback, SILO mapping). Regeneration is only offered when this changes.
-export function assessmentFingerprint(code: string): string {
-  const subject = studentDashboardSubjects[code]
+export function assessmentFingerprint(subjects: DashboardSubjects, code: string): string {
+  const subject = subjects[code]
   if (!subject) return '0'
   const parts: string[] = []
   for (const outcome of subject.learningOutcomes) {
@@ -60,8 +59,8 @@ function summariseFeedback(topic: string, items: AssessmentFeedback[]): string {
   return `Across ${items.length} assessment${items.length > 1 ? 's' : ''}, the feedback consistently flags ${topic} as needing more consistent application and clearer justification of decisions. The clearest signal is ${lowest.name} (${lowest.score}/100).`
 }
 
-export function buildStudyPlan(code: string): SiloPlan[] {
-  const subject = studentDashboardSubjects[code]
+export function buildStudyPlan(subjects: DashboardSubjects, code: string): SiloPlan[] {
+  const subject = subjects[code]
   if (!subject) return []
 
   return subject.learningOutcomes.map((outcome, siloIndex) => {
