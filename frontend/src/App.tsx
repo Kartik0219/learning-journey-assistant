@@ -1,10 +1,6 @@
 import {
   BookOpen,
-  ChartNoAxesCombined,
-  ClipboardList,
-  FileQuestion,
   LayoutDashboard,
-  LibraryBig,
   Menu,
   TableProperties,
   X,
@@ -18,10 +14,6 @@ import './App.css'
 const navigation = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/' },
   { label: 'Results overview', icon: TableProperties, to: '/results' },
-  { label: 'My plan', icon: ClipboardList },
-  { label: 'Quizzes', icon: FileQuestion },
-  { label: 'Resources', icon: LibraryBig },
-  { label: 'Progress', icon: ChartNoAxesCombined },
 ]
 
 function App() {
@@ -46,13 +38,11 @@ function App() {
           {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
         </button>
         <nav className="navigation" id="primary-navigation" aria-label="Primary navigation">
-          {navigation.map(({ label, icon: Icon, to }) => to ? (
+          {navigation.map(({ label, icon: Icon, to }) => (
             <NavLink className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} key={label} to={to} end={to === '/'} onClick={closeMenu}>
               <Icon size={17} aria-hidden="true" />
               {label}
             </NavLink>
-          ) : (
-            <button className="nav-item" key={label} type="button" onClick={closeMenu}><Icon size={17} aria-hidden="true" />{label}</button>
           ))}
         </nav>
         <div className="student-profile"><span className="avatar">AL</span><span><strong>Alex Lee</strong><small>Undergraduate</small></span></div>
