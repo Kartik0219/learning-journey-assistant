@@ -45,6 +45,35 @@ export const studentResults: SubjectResults[] = [
   },
 ]
 
+export interface SubjectSilo {
+  id: string
+  description: string
+}
+
+// Subject Intended Learning Outcomes, taken from the "Assessment Map" tab of
+// the CSE results workbook (SILO Theme Summary column).
+export const subjectSilos: Record<string, SubjectSilo[]> = {
+  CSE1OOF: [
+    { id: 'SILO1', description: 'analysis/design/implementation compared with object-oriented modelling using objects that combine data structure and behaviour' },
+    { id: 'SILO2', description: 'abstract data types and encapsulation to localise and minimise change' },
+    { id: 'SILO3', description: 'code sharing and reuse through object-oriented techniques to reduce development time' },
+    { id: 'SILO4', description: 'object-oriented design and implementation of computer programs for real-life problems' },
+  ],
+  CSE2ALG: [
+    { id: 'SILO1', description: 'overall objectives of Algorithms and Data Structures' },
+    { id: 'SILO2', description: 'identifying data structures and searching and sorting algorithms in computing contexts' },
+    { id: 'SILO3', description: 'implementing data structures and searching and sorting algorithms in Java' },
+    { id: 'SILO4', description: 'comparing algorithms and data structures and applying suitable choices to problems' },
+    { id: 'SILO5', description: 'designing, implementing, and evaluating Java solutions using appropriate performance measures' },
+  ],
+  CSE3CAP: [
+    { id: 'SILO1', description: 'advanced project management during substantive development implementation' },
+    { id: 'SILO2', description: 'industry standard technical solutions in software or cybersecurity practice' },
+    { id: 'SILO3', description: 'reporting project outcomes to technical and non-technical audiences and reflecting on feedback' },
+    { id: 'SILO4', description: 'professional system documentation and advanced technical reporting to industry standards' },
+  ],
+}
+
 export const studentSummary = {
   id: 'STU0001',
   averageTotal: 49.95,

@@ -45,3 +45,15 @@
 	.results-panel .score { margin-top: -2px; }
 	.results-panel .weighted-score { font-size: 14px; }
 }
+
+/* "Subject learning outcomes" table - 2 columns only. Must come after the
+   .results-panel rules (incl. the max-width:700px block) so these win for a
+   section that carries both classes. */
+.silo-panel table { min-width: 0; }
+.silo-panel th:nth-child(1), .silo-panel td:nth-child(1) { text-align: left; white-space: nowrap; width: 120px; }
+.silo-panel th:nth-child(2), .silo-panel td:nth-child(2) { overflow-wrap: anywhere; text-align: left; width: auto; }
+
+@media (max-width: 700px) {
+	.silo-panel tbody th::before { content: 'SILO'; }
+	.silo-panel tbody td:nth-child(2)::before { content: 'Description'; }
+}
