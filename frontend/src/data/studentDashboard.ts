@@ -17,10 +17,10 @@ function round(value: number): number {
 }
 
 function band(pct: number): { status: MasteryStatus; statusLabel: string } {
-  if (pct >= 80) return { status: 'strong', statusLabel: 'Mastered' }
-  if (pct >= 65) return { status: 'strong', statusLabel: 'Proficient' }
-  if (pct >= 50) return { status: 'onTrack', statusLabel: 'Developing' }
-  return { status: 'focusArea', statusLabel: 'At risk' }
+  if (pct >= 80) return { status: 'mastered', statusLabel: 'Mastered' }
+  if (pct >= 65) return { status: 'proficient', statusLabel: 'Proficient' }
+  if (pct >= 50) return { status: 'developing', statusLabel: 'Developing' }
+  return { status: 'atRisk', statusLabel: 'At risk' }
 }
 
 function actionFor(statusLabel: string): string {
@@ -77,11 +77,12 @@ function buildSubject(code: string): DashboardSubject {
         score: `${a.score} / 100`,
       })),
       feedback: weakestContribution?.feedback ?? 'No assessment evidence recorded for this outcome yet.',
+      feedbackSource: weakestContribution?.assessment,
       recommendedAction: actionFor(statusLabel),
     }
   })
 
-  learningOutcomes.sort((a, b) => b.masteryPercentage - a.masteryPercentage)
+  // Keep display order as SILO1, SILO2, SILO3... (the order in subjectSilos).
 
   // Cumulative weighted mastery after each assessment, in the order they were sat.
   let runningWeight = 0
@@ -92,8 +93,9 @@ function buildSubject(code: string): DashboardSubject {
     return round(runningWeighted / runningWeight)
   })
 
-  const weakest = learningOutcomes[learningOutcomes.length - 1]
-  const secondWeakest = learningOutcomes[learningOutcomes.length - 2] ?? weakest
+  const byMastery = [...learningOutcomes].sort((a, b) => a.masteryPercentage - b.masteryPercentage)
+  const weakest = byMastery[0]
+  const secondWeakest = byMastery[1] ?? weakest
 
   return {
     code,

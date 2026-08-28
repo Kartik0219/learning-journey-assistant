@@ -1,4 +1,11 @@
-export type MasteryStatus = 'strong' | 'onTrack' | 'focusArea'
+export type MasteryStatus =
+  | 'strong'
+  | 'onTrack'
+  | 'focusArea'
+  | 'atRisk'
+  | 'developing'
+  | 'proficient'
+  | 'mastered'
 
 export interface EvidenceItem {
   label: string
@@ -12,6 +19,7 @@ export interface LearningOutcome {
   statusLabel: string
   evidence: EvidenceItem[]
   feedback: string
+  feedbackSource?: string
   recommendedAction: string
 }
 
