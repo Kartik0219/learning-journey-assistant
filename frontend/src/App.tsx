@@ -1,6 +1,7 @@
 import {
   BookOpen,
   LayoutDashboard,
+  LogOut,
   Menu,
   TableProperties,
   X,
@@ -20,15 +21,20 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const closeMenu = () => setMenuOpen(false)
 
+  function handleLogOff() {
+    // No auth system yet (Phase 4/6) - return to the landing route for now.
+    window.location.assign('/')
+  }
+
   return (
     <div className="app-shell">
-      <aside className={menuOpen ? 'sidebar sidebar--open' : 'sidebar'}>
+      <header className="topbar">
         <NavLink className="brand" to="/" aria-label="Learning Journey Assistant dashboard" onClick={closeMenu}>
           <span className="brand-mark"><BookOpen size={18} aria-hidden="true" /></span>
-          <span>Learning Journey<br />Assistant</span>
+          <span>Learning Journey Assistant</span>
         </NavLink>
         <button
-          className="sidebar-toggle"
+          className="menu-toggle"
           type="button"
           aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={menuOpen}
@@ -37,16 +43,24 @@ function App() {
         >
           {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
         </button>
-        <nav className="navigation" id="primary-navigation" aria-label="Primary navigation">
+        <div className="topbar-user">
+          <span className="user-name">Student STU0001</span>
+          <button className="logout-btn" type="button" onClick={handleLogOff}>
+            <LogOut size={16} aria-hidden="true" />
+            Log off
+          </button>
+        </div>
+      </header>
+      <nav className={menuOpen ? 'navbar navbar--open' : 'navbar'} id="primary-navigation" aria-label="Primary navigation">
+        <div className="navigation">
           {navigation.map(({ label, icon: Icon, to }) => (
             <NavLink className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} key={label} to={to} end={to === '/'} onClick={closeMenu}>
               <Icon size={17} aria-hidden="true" />
               {label}
             </NavLink>
           ))}
-        </nav>
-        <div className="student-profile"><span className="avatar">S1</span><span><strong>Student STU0001</strong><small>Undergraduate</small></span></div>
-      </aside>
+        </div>
+      </nav>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/results" element={<ResultsOverviewPage />} />
