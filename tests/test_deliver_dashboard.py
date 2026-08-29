@@ -118,6 +118,36 @@ def test_dashboard_never_surfaces_an_unreviewed_gap(seeded_db):
         assert silo1_data["mastery_score"] == 0.72
 
 
+def test_dashboard_subjects_overview_averages_mastery_within_each_subject(seeded_db):
+    """App-build phase frontend feature: data['subjects'] rolls up each
+    outcome's mastery into a per-subject average. The sample dataset has
+    only one subject, so this should be a single entry averaging all
+    three SILO scores."""
+    with get_session() as session:
+        student = _student(session, "DEMO0002")
+        _run_model_and_estimate_stages(session, student)
+
+        data = get_student_dashboard(
+            session, Actor(role=Role.STUDENT, student_id=student.id), student_id=student.id
+        )
+
+        assert len(data["subjects"]) == 1
+        outcome_scores = [o["mastery_score"] for o in data["outcomes"]]
+        expected_pct = round(sum(outcome_scores) / len(outcome_scores) * 100)
+        assert data["subjects"][0]["average_mastery_pct"] == expected_pct
+
+
+def test_dashboard_subjects_overview_empty_before_estimate_stage(seeded_db):
+    with get_session() as session:
+        student = _student(session, "DEMO0003")
+
+        data = get_student_dashboard(
+            session, Actor(role=Role.STUDENT, student_id=student.id), student_id=student.id
+        )
+
+        assert data["subjects"] == []
+
+
 def test_dashboard_before_estimate_stage_has_no_mastery_or_recommendation(seeded_db):
     """A student with rows in the DB but before the Estimate stage has
     run should get a dashboard that renders (no crash), just with
