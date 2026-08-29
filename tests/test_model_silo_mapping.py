@@ -12,6 +12,8 @@ from src.db.database import get_session
 from src.db.models import AssessmentResult, LearningOutcome, Student
 from src.model.silo_mapping import (
     CONFIDENCE_REVIEW_THRESHOLD,
+    MASTERY_THRESHOLD,
+    SILO_TAG_CONFIDENCE,
     extract_skill_gaps,
     gap_type_for,
     map_gap_to_learning_outcome,
@@ -112,3 +114,115 @@ def test_best_similarity_on_empty_corpus_returns_no_match():
     from src.model.silo_mapping import best_similarity
 
     assert best_similarity("anything", []) == (-1, 0.0)
+
+
+# --- Real-dataset path (IOG-33): score-band severity + explicit SILO tags ---
+#
+# These reuse the sample dataset's own DEMO subject/SILO1-3 fixtures (via
+# seeded_db) rather than the real xlsx (gitignored, not present in CI) -
+# what's under test here is extract_skill_gaps' *dispatch* and the
+# score-band/tag-parsing logic itself, not the loader that populates
+# silo_tags_text (that's tests/test_connect_excel_loader.py's job).
+
+
+def _set_silo_tags(session, student_number: str, silo_tags_text: str, score: float):
+    result = _result_for(session, student_number)
+    result.silo_tags_text = silo_tags_text
+    result.score = score
+    session.flush()
+    return result
+
+
+def test_silo_tag_path_is_used_whenever_silo_tags_text_is_set(seeded_db):
+    """Setting silo_tags_text switches extraction to the tag-based path
+    even though this result's feedback_text still has deficiency markers
+    a heuristic scan would otherwise catch - the tag path doesn't look at
+    feedback_text at all."""
+    with get_session() as session:
+        result = _set_silo_tags(session, "DEMO0001", "SILO2: Apply demo techniques", score=40.0)
+        gaps = extract_skill_gaps(session, result)
+
+        assert len(gaps) == 1
+        gap = gaps[0]
+        assert gap.source_evidence_text == "SILO2: Apply demo techniques"
+        assert gap.confidence == SILO_TAG_CONFIDENCE
+        assert gap.reviewed is True
+
+
+def test_silo_tag_path_severity_follows_score_bands(seeded_db):
+    with get_session() as session:
+        high = _set_silo_tags(session, "DEMO0001", "SILO1: gap", score=30.0)
+        assert extract_skill_gaps(session, high)[0].severity == "high"
+
+    with get_session() as session:
+        medium = _set_silo_tags(session, "DEMO0001", "SILO1: gap", score=60.0)
+        assert extract_skill_gaps(session, medium)[0].severity == "medium"
+
+    with get_session() as session:
+        low = _set_silo_tags(session, "DEMO0001", "SILO1: gap", score=75.0)
+        assert extract_skill_gaps(session, low)[0].severity == "low"
+
+
+def test_silo_tag_path_at_or_above_mastery_threshold_yields_no_gaps(seeded_db):
+    """A High Distinction result isn't a skill gap, even if it's tagged
+    with SILOs (every result is tagged with the SILOs it *covers*, not
+    the ones the student struggled with)."""
+    with get_session() as session:
+        result = _set_silo_tags(
+            session, "DEMO0001", "SILO1: gap", score=MASTERY_THRESHOLD
+        )
+        assert extract_skill_gaps(session, result) == []
+
+
+def test_silo_tag_path_with_no_score_yields_no_gaps(seeded_db):
+    with get_session() as session:
+        result = _result_for(session, "DEMO0001")
+        result.silo_tags_text = "SILO1: gap"
+        result.score = None
+        session.flush()
+        assert extract_skill_gaps(session, result) == []
+
+
+def test_silo_tag_path_produces_one_gap_per_tagged_silo(seeded_db):
+    with get_session() as session:
+        result = _set_silo_tags(
+            session,
+            "DEMO0001",
+            "SILO1: Explain core concepts; SILO3: Critically evaluate trade-offs",
+            score=55.0,
+        )
+        gaps = extract_skill_gaps(session, result)
+        assert {g.source_evidence_text for g in gaps} == {
+            "SILO1: Explain core concepts",
+            "SILO3: Critically evaluate trade-offs",
+        }
+
+
+def test_silo_tag_evidence_maps_by_exact_code_not_similarity(seeded_db):
+    """The evidence text names its own SILO code - mapping must use that
+    exact code, not fall through to a (potentially different) closest
+    TF-IDF match."""
+    with get_session() as session:
+        # Deliberately word this so a naive similarity match might drift
+        # towards SILO2 ("Apply...") - the exact "SILO3:" prefix must win.
+        result = _set_silo_tags(
+            session, "DEMO0001", "SILO3: apply careful technique review", score=55.0
+        )
+        gap = extract_skill_gaps(session, result)[0]
+
+        outcome = map_gap_to_learning_outcome(session, gap)
+        assert outcome is not None
+        assert outcome.code == "SILO3"
+        assert gap.gap_type == "evaluation"  # SILO3's own verb, not SILO2's
+
+
+def test_feedback_text_path_still_used_when_silo_tags_text_is_unset(seeded_db):
+    """Dispatch check: the sample dataset's results have no silo_tags_text
+    (mirrors the real synthetic CSVs, which have no such column), so they
+    must still go through the original heuristic unchanged."""
+    with get_session() as session:
+        result = _result_for(session, "DEMO0001")
+        assert result.silo_tags_text is None
+        gaps = extract_skill_gaps(session, result)
+        assert len(gaps) == 1
+        assert gaps[0].confidence != SILO_TAG_CONFIDENCE

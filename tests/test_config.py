@@ -19,3 +19,17 @@ def test_moodle_configured_when_both_set(monkeypatch):
     monkeypatch.setenv("MOODLE_WS_TOKEN", "fake-token")
     settings = get_settings()
     assert settings.moodle_configured is True
+
+
+def test_historical_dataset_path_unset_by_default(monkeypatch):
+    """IOG-33/N9: unset means "use the synthetic sample data" - same
+    fallback pattern as Moodle above."""
+    monkeypatch.delenv("HISTORICAL_DATASET_PATH", raising=False)
+    settings = get_settings()
+    assert settings.historical_dataset_path is None
+
+
+def test_historical_dataset_path_set_when_env_var_present(monkeypatch):
+    monkeypatch.setenv("HISTORICAL_DATASET_PATH", "data/provided/real.xlsx")
+    settings = get_settings()
+    assert settings.historical_dataset_path == "data/provided/real.xlsx"
