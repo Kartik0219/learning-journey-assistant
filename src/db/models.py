@@ -313,6 +313,72 @@ class StudyEngagement(Base):
     study_recommendation: Mapped[StudyRecommendation] = relationship()
 
 
+class UserCredential(Base):
+    """Real password sign-in credentials (N1), added alongside the app-
+    build phase to replace the demonstration-only student/role picker in
+    `src.deliver.app`.
+
+    A separate table rather than a `password_hash` column on `Student`,
+    because Staff/Admin accounts have no `Student` row to hang a column
+    off - `username` is how those two are identified, `student_id` is how
+    a Student is. Exactly one of the two is set, enforced in
+    `src.security.authentication` rather than at the schema level (SQLite
+    has no portable CHECK-constraint-with-XOR story worth the complexity
+    here). Never stores a plaintext password, only a salted hash from
+    `src.security.authentication.hash_password` (werkzeug's PBKDF2-based
+    `generate_password_hash` - already a transitive dependency via Flask,
+    so no new package). See that module's docstring for the honesty note
+    this carries forward from the original login: the *mechanism* here is
+    real, but the seeded demo passwords are fixed/known, same
+    demonstration-scope disclosure `src.deliver.app` already made.
+    """
+
+    __tablename__ = "user_credentials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    role: Mapped[str] = mapped_column(String(20))  # Role.value: student/staff/admin
+    student_id: Mapped[int | None] = mapped_column(
+        ForeignKey("students.id"), unique=True, default=None
+    )
+    username: Mapped[str | None] = mapped_column(String(100), unique=True, default=None)
+    password_hash: Mapped[str] = mapped_column(String(255))
+
+    student: Mapped[Student | None] = relationship()
+
+
+class QuizQuestion(Base):
+    """A generated practice-quiz question (F8, app-build phase AI feature).
+
+    Grounded the same way `StudyRecommendation.material_text` is (F8/F9):
+    built from a template around a specific `SkillGap`'s own cited
+    evidence plus the closest `TopicMaterial` passage found by
+    `src.model.silo_mapping.best_similarity` (TF-IDF cosine similarity) -
+    never freely generated, so there is nothing here a model could have
+    hallucinated. `source_skill_gap_id` and `source_topic_material_id`
+    make every question traceable back to the exact evidence and passage
+    it was built from, the same evidentiary standard F4 already requires
+    of skill gaps themselves.
+    """
+
+    __tablename__ = "quiz_questions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"))
+    learning_outcome_id: Mapped[int] = mapped_column(ForeignKey("learning_outcomes.id"))
+    source_skill_gap_id: Mapped[int] = mapped_column(ForeignKey("skill_gaps.id"))
+    source_topic_material_id: Mapped[int | None] = mapped_column(
+        ForeignKey("topic_materials.id"), default=None
+    )
+    question_text: Mapped[str] = mapped_column(Text)
+    question_type: Mapped[str] = mapped_column(String(30))  # recall / apply / evaluate
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    student: Mapped[Student] = relationship()
+    learning_outcome: Mapped[LearningOutcome] = relationship()
+    source_skill_gap: Mapped[SkillGap] = relationship()
+    source_topic_material: Mapped[TopicMaterial | None] = relationship()
+
+
 class AuditLogEntry(Base):
     """N4: sign-in, consent changes, data import, study-plan/quiz creation.
 
