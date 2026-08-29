@@ -21,6 +21,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from src.db.models import LearningOutcome, MasteryScore, Student, StudyRecommendation
+from src.estimate.quiz import latest_quiz_questions
 from src.security.authorization import Actor, require_student_access
 from src.security.consent import ensure_consent_active
 
@@ -71,12 +72,24 @@ def get_student_dashboard(session: Session, actor: Actor, student_id: int) -> di
         ]
 
         recommendation = _latest_recommendation(session, student_id, lo.id)
+        # App-build phase AI feature (F8): quiz questions Estimate already
+        # generated for this outcome, read back the same way a study
+        # recommendation is - not regenerated on every page view.
+        quiz_questions = [
+            {
+                "id": q.id,
+                "question_text": q.question_text,
+                "question_type": q.question_type,
+            }
+            for q in latest_quiz_questions(session, student_id, lo.id)
+        ]
 
         outcomes.append(
             {
                 "id": lo.id,
                 "code": lo.code,
                 "description": lo.description,
+                "subject_code": lo.subject.code,
                 "mastery_score": mastery.score if mastery else None,
                 "mastery_pct": round(mastery.score * 100) if mastery else None,
                 "explanation": mastery.explanation_text if mastery else None,
@@ -95,6 +108,7 @@ def get_student_dashboard(session: Session, actor: Actor, student_id: int) -> di
                     if recommendation
                     else None
                 ),
+                "quiz_questions": quiz_questions,
             }
         )
 
@@ -103,8 +117,23 @@ def get_student_dashboard(session: Session, actor: Actor, student_id: int) -> di
         key=lambda o: o["mastery_score"],
     )[:3]
 
+    # Frontend feature (app-build phase): a per-subject rollup for the
+    # dashboard's overview strip - one row per subject the student has at
+    # least one scored outcome in, so a multi-subject student (the real
+    # dataset's shape) gets an at-a-glance summary before the per-SILO
+    # detail below it, rather than only ever seeing a flat outcome list.
+    subject_summary: dict[str, list[float]] = {}
+    for o in outcomes:
+        if o["mastery_score"] is not None:
+            subject_summary.setdefault(o["subject_code"], []).append(o["mastery_score"])
+    subjects = [
+        {"code": code, "average_mastery_pct": round(sum(scores) / len(scores) * 100)}
+        for code, scores in subject_summary.items()
+    ]
+
     return {
         "student": {"id": student.id, "display_name": student.display_name},
         "outcomes": outcomes,
         "priority_outcomes": priority_outcomes,
+        "subjects": subjects,
     }
