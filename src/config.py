@@ -22,6 +22,7 @@ class Settings:
     database_url: str
     moodle_base_url: str | None
     moodle_ws_token: str | None
+    historical_dataset_path: str | None
     llm_provider: str | None
     llm_api_key: str | None
     app_secret_key: str
@@ -49,6 +50,11 @@ def get_settings() -> Settings:
         database_url=os.getenv("DATABASE_URL", "sqlite:///./ljas_dev.db"),
         moodle_base_url=os.getenv("MOODLE_BASE_URL") or None,
         moodle_ws_token=os.getenv("MOODLE_WS_TOKEN") or None,
+        # IOG-33/N9: path to the real provided .xlsx dataset (data/provided/,
+        # gitignored - never commit real student records). Unset in CI/a
+        # fresh clone, so src.parse.cleaners falls back to the synthetic
+        # data/sample/ CSVs automatically - same fallback pattern as Moodle.
+        historical_dataset_path=os.getenv("HISTORICAL_DATASET_PATH") or None,
         llm_provider=os.getenv("LLM_PROVIDER") or None,
         llm_api_key=os.getenv("LLM_API_KEY") or None,
         app_secret_key=os.getenv("APP_SECRET_KEY", "changeme-dev-only"),
