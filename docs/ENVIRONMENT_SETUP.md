@@ -84,13 +84,73 @@ report once confirmed.
 python -m src.deliver.app
 ```
 
-Then open `http://localhost:5000` and pick a demo student (or Staff/
-Admin) on the login screen — see `src.deliver.app`'s docstring for why
-this login is demonstration-level only (no password), not a real
-authentication system; everything downstream of it (authorization,
-consent gating) is the real, tested IOG-42 security layer. Run the
-pipeline first so there's mastery data to show; re-run it any time to
-refresh scores without restarting the server.
+Then open `http://localhost:5000` and log in with a real password (see
+"Demo accounts" below) — see `src.security.authentication`'s docstring
+for how the check works (salted hashes, no plaintext passwords stored);
+everything downstream of login (authorization, consent gating) is the
+same real, tested IOG-42 security layer as before. Run the pipeline
+first so there's mastery data to show; re-run it any time to refresh
+scores without restarting the server.
+
+### Demo accounts
+
+Seeded automatically by `seed_demo_credentials` every time the pipeline's
+Parse stage runs (`src.parse.cleaners`), idempotently - re-running the
+pipeline never resets a password you've since changed.
+
+| Role | Identifier | Password |
+|---|---|---|
+| Student | their student number, e.g. `DEMO0001` | same as the student number, e.g. `DEMO0001` |
+| Staff | `staff` | `staff123` |
+| Admin | `admin` | `admin123` |
+
+Fixed and documented on purpose - this remains an academic
+demonstration with no self-service sign-up, not a claim of
+production-grade credential management. The *mechanism* is real: a
+wrong password is genuinely rejected (`src.security.authentication.
+AuthenticationError`), and every sign-in attempt (success or failure) is
+audit-logged (`sign_in` / `sign_in_failed`, N4).
+
+Staff/Admin also get a **Coordinator report** link in the header once
+logged in — see "New in the app-build phase" below.
+
+## New in the app-build phase
+
+Five tickets added on top of the pipeline above, each owned by one group
+member (IOG-45 through IOG-49) — the underlying Python/SQLAlchemy/
+Flask/TF-IDF stack is unchanged, no new database engine, no LLM:
+
+- **Real password authentication** (`src.security.authentication`,
+  IOG-47, Farshad) — replaces the old student/role picker. Salted
+  PBKDF2 hashes (werkzeug's `generate_password_hash`, already a Flask
+  dependency, so no new package), verified on every login, wrong
+  passwords rejected, every attempt audit-logged.
+- **TF-IDF quiz generation** (`src.estimate.quiz`, IOG-48, Prabhashi) —
+  F8's previously unbuilt "generate a practice quiz" item. One grounded
+  question per reviewed skill gap, templated from that gap's own
+  verbatim evidence plus the closest topic-material passage (same
+  TF-IDF cosine-similarity retrieval `src.model.silo_mapping` and
+  `src.estimate.mastery` already use) — no LLM, nothing a model could
+  have hallucinated. Runs as part of `run_estimate_stage` in the
+  pipeline; shown under "Practice quiz" on each outcome's dashboard
+  card.
+- **Coordinator report** (`src.deliver.coordinator_api`, `/coordinator`
+  route, IOG-46, Ge Su) — a Staff/Admin-only cohort-level view:
+  per-subject/per-SILO average mastery and gap-severity counts, plus an
+  "at-risk" student list (average mastery below 50%). Every aggregate
+  excludes students without active consent, the same N2 gate the rest
+  of the pipeline already enforces — not a new consent bypass for
+  reporting.
+- **Dashboard frontend polish** (IOG-45, Anjan) — a per-subject mastery
+  overview strip above the per-SILO detail (useful once a student spans
+  more than one subject, as the real dataset's students do),
+  mobile-responsive layout (`base.html`'s new media query), and styled
+  form inputs across login/dashboard/coordinator.
+- **Integration, regression testing, docs and GitHub/Jira upkeep**
+  (IOG-49, Kartik) — wiring the four features above together, running
+  the full test suite against them, keeping this document and the
+  data dictionary accurate, and pushing/tracking the work in GitHub and
+  Jira.
 
 ## Running tests
 
@@ -114,9 +174,11 @@ ruff check .
 | Connect | Sample-CSV loader and the real-dataset Excel loader (`src.connect.excel_loader`, IOG-33) both work; Moodle client is a real HTTP wrapper but needs a real WS token to test against | IOG-33 |
 | Parse | Working - validates + upserts subjects, learning outcomes, rubric criteria, students, assessment results, topic materials; seeds demo consent; picks the sample or real-dataset loader per `HISTORICAL_DATASET_PATH` | IOG-34 |
 | Model (skill-gap extraction, SILO mapping) | Working - two extraction paths (explicit SILO tags + score-band severity for the real dataset; the original TF-IDF/keyword heuristic for the sample dataset, unchanged), see `src/model/silo_mapping.py`'s docstring | IOG-37, IOG-38 |
-| Estimate (mastery scoring, study recommendations, engagement) | Working - explainable weighted scoring, fixed-table study method (F7), grounded study material (F8/F9), engagement feedback (F11). Quiz generation (also part of F8) is not yet built. | IOG-38, IOG-39 |
-| Deliver (dashboard) | Working - real Flask app (`python -m src.deliver.app`) showing mastery, gaps, and recommendations per student, behind the real IOG-42 security checks | IOG-40 |
-| Security (encryption, RBAC, audit log, consent) | Implemented as reusable primitives in `src/security/`, and wired end-to-end through the dashboard/Estimate stage above | IOG-42 |
+| Estimate (mastery scoring, study recommendations, quiz generation, engagement) | Working - explainable weighted scoring, fixed-table study method (F7), grounded study material (F8/F9), TF-IDF-grounded quiz questions (`src/estimate/quiz.py`, F8), engagement feedback (F11) | IOG-38, IOG-39, IOG-48 (Prabhashi) |
+| Deliver (dashboard, coordinator report) | Working - real Flask app (`python -m src.deliver.app`) showing mastery, gaps, quiz questions, and recommendations per student, plus a Staff/Admin coordinator cohort report (`/coordinator`), behind the real IOG-42 security checks | IOG-40, IOG-46 (Ge Su) |
+| Security (encryption, RBAC, audit log, consent, authentication) | Implemented as reusable primitives in `src/security/`, wired end-to-end through the dashboard/Estimate stage above; real password authentication (`src/security/authentication.py`) replaced the old demo picker | IOG-42, IOG-47 (Farshad) |
+| Frontend polish (dashboard/login/coordinator styling, responsive layout, per-subject overview) | Working - see `src/deliver/templates/` | IOG-45 (Anjan) |
+| Integration, regression testing, docs, GitHub/Jira upkeep | Working - full test suite passing across all app-build features, docs cross-checked, tickets/board kept current | IOG-49 (Kartik) |
 
 Run `python -m src.pipeline` to execute Connect through Estimate in one
 command, then `python -m src.deliver.app` for the dashboard - see
