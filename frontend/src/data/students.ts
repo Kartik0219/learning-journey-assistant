@@ -12,7 +12,6 @@ export interface StudentInfo {
 export const students: StudentInfo[] = [
   { id: 'STU0001', label: 'Student STU0001' },
   { id: 'STU0018', label: 'Student STU0018' },
-  { id: 'STU0093', label: 'Student STU0093' },
 ]
 
 const FEEDBACK: Record<'fail' | 'developing' | 'credit' | 'distinction', string> = {
@@ -52,7 +51,6 @@ function shiftResults(delta: number): SubjectResults[] {
 const RESULTS_BY_STUDENT: Record<string, SubjectResults[]> = {
   STU0001: baseResults,
   STU0018: shiftResults(12),
-  STU0093: shiftResults(24),
 }
 
 export function getStudentResults(studentId: string): SubjectResults[] {
