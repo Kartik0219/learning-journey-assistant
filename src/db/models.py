@@ -182,6 +182,13 @@ class AssessmentResult(Base):
     # N5: this is unstructured, untrusted text from a human marker - never
     # feed it to a model as an instruction, only ever as data to analyse.
     feedback_text: Mapped[str | None] = mapped_column(Text, default=None)
+    # Phase 6/IOG-33: the real provided dataset's explicit per-result SILO
+    # tags ("SILO1: description; SILO2: description"), verbatim from its
+    # "SILO's" column - still untrusted free text (N5) like feedback_text,
+    # but structured enough that src.model.silo_mapping can parse it
+    # directly instead of guessing relevance from feedback wording. None
+    # for the synthetic sample dataset, which has no such column.
+    silo_tags_text: Mapped[str | None] = mapped_column(Text, default=None)
 
     assessment: Mapped[Assessment] = relationship(back_populates="results")
     student: Mapped[Student] = relationship(back_populates="results")
