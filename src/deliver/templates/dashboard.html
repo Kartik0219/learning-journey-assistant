@@ -25,6 +25,21 @@
     <p class="muted">Mastery by learning outcome, with the evidence behind every number (F6).</p>
   </div>
 
+  {% if data.subjects|length > 1 %}
+    <div class="card">
+      <h2>Subjects overview</h2>
+      <div class="subject-overview">
+        {% for s in data.subjects %}
+          <div class="subject-chip">
+            <span class="subject-chip-code">{{ s.code }}</span>
+            <div class="mastery-bar-track"><div class="mastery-bar-fill" style="width: {{ s.average_mastery_pct }}%;"></div></div>
+            <span class="muted">{{ s.average_mastery_pct }}%</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
   <div class="card">
     <h2>Priority topics</h2>
     {% if data.priority_outcomes %}
@@ -73,6 +88,16 @@
             <button class="primary" type="submit">Mark as practiced</button>
           </form>
         </div>
+      {% endif %}
+
+      {% if o.quiz_questions %}
+        <p style="margin: 14px 0 4px;"><strong>Practice quiz</strong> <span class="muted">(grounded in your recorded gaps, F8)</span></p>
+        {% for q in o.quiz_questions %}
+          <div class="quiz-question">
+            <span class="badge quiz-{{ q.question_type }}">{{ q.question_type }}</span>
+            {{ q.question_text }}
+          </div>
+        {% endfor %}
       {% endif %}
     </div>
   {% endfor %}

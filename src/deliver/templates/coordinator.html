@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Coordinator report — Learning Journey Assistant{% endblock %}
+{% block content %}
+
+  <div class="card">
+    <h1>Coordinator report</h1>
+    <p class="muted">
+      Cohort-level view across {{ report.consented_student_count }} consented
+      student(s) — averages and counts here never include a student without
+      active consent (N2), the same gate the per-student dashboard enforces.
+    </p>
+  </div>
+
+  {% if report.at_risk_students %}
+    <div class="card">
+      <h2>At-risk students <span class="muted">(average mastery below 50%)</span></h2>
+      <table class="priority">
+        <tr><th>Student</th><th>Average mastery</th></tr>
+        {% for s in report.at_risk_students %}
+          <tr><td>{{ s.display_name }}</td><td>{{ s.average_mastery_pct }}%</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  {% endif %}
+
+  {% for subject in report.subjects %}
+    <div class="card">
+      <h2>{{ subject.code }} — {{ subject.name }}</h2>
+      {% for o in subject.outcomes %}
+        <div class="coordinator-outcome">
+          <p><strong>{{ o.code }}</strong> — {{ o.description }}</p>
+          {% if o.average_mastery_pct is not none %}
+            <div class="mastery-bar-track"><div class="mastery-bar-fill" style="width: {{ o.average_mastery_pct }}%;"></div></div>
+            <p class="muted">{{ o.average_mastery_pct }}% average mastery across {{ o.student_count }} student(s)</p>
+          {% else %}
+            <p class="muted">No mastery data yet for this outcome.</p>
+          {% endif %}
+          <p class="muted">
+            Reviewed gaps:
+            <span class="badge high">{{ o.gap_counts.high }} high</span>
+            <span class="badge medium">{{ o.gap_counts.medium }} medium</span>
+            <span class="badge low">{{ o.gap_counts.low }} low</span>
+          </p>
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+
+{% endblock %}
