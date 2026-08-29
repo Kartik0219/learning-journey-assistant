@@ -15,6 +15,10 @@ pydantic>=2.6,<3.0
 # Dataset handling (historical dataset fallback - N9; CSV/JSON loading)
 pandas>=2.2,<3.0
 
+# Reads the real provided dataset's .xlsx workbook (IOG-33) - pandas'
+# read_excel() needs this engine for .xlsx specifically.
+openpyxl>=3.1,<4.0
+
 # Moodle Web Services calls (read-only - F1)
 requests>=2.31,<3.0
 

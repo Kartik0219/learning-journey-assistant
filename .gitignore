@@ -21,10 +21,14 @@ env/
 *.db
 *.sqlite3
 
+# --- Real student data (N3: never commit real records, private or not) ---
+data/provided/
+
 # --- Test / coverage ---
 .pytest_cache/
 .coverage
 htmlcov/
+.ruff_cache/
 
 # --- Editors / OS ---
 .vscode/
