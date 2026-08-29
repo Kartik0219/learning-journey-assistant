@@ -74,6 +74,13 @@ class AssessmentResultRecord(BaseModel):
     student_number: str
     score: float | None = Field(default=None, ge=0, le=100)
     feedback_text: str | None = None
+    # Phase 6/IOG-33: the real provided dataset's "SILO's" column -
+    # explicit "SILO1: description; SILO2: description" tags stating
+    # which learning outcomes this result actually covers. None for the
+    # synthetic sample dataset, which has no such column - Phase 3's
+    # extraction (src.model.silo_mapping) falls back to its older
+    # feedback-text heuristic whenever this is absent.
+    silo_tags_text: str | None = None
 
     @field_validator("subject_code", "student_number")
     @classmethod

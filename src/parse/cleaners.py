@@ -21,7 +21,8 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from src.common.logging_config import configure_logging, get_logger
-from src.connect import historical_dataset_loader as loader
+from src.config import get_settings
+from src.connect import excel_loader, historical_dataset_loader
 from src.db.database import get_session, init_db
 from src.db.models import (
     Assessment,
@@ -170,6 +171,9 @@ def upsert_assessment_result(session: Session, record: AssessmentResultRecord) -
     if existing:
         existing.score = record.score
         existing.feedback_text = record.feedback_text
+        # IOG-33: carry the real dataset's explicit SILO tags through on
+        # re-import too, not just on first insert.
+        existing.silo_tags_text = record.silo_tags_text
         return existing
 
     result = AssessmentResult(
@@ -177,6 +181,7 @@ def upsert_assessment_result(session: Session, record: AssessmentResultRecord) -
         student_id=student.id,
         score=record.score,
         feedback_text=record.feedback_text,
+        silo_tags_text=record.silo_tags_text,
     )
     session.add(result)
     session.flush()
@@ -235,10 +240,24 @@ def seed_demo_consent(session: Session, students: list[Student]) -> int:
     return seeded
 
 
+def _select_loader():
+    """IOG-33/N9: pick the real Excel loader when HISTORICAL_DATASET_PATH
+    is set, otherwise fall back to the synthetic CSV loader - same
+    unset-means-fallback pattern already used for Moodle credentials.
+    Kept as one place to switch so nothing else in this module (or its
+    tests) needs to know which dataset shape is active."""
+    if get_settings().historical_dataset_path:
+        return excel_loader
+    return historical_dataset_loader
+
+
 def run_parse_stage() -> None:
-    """End-to-end: load sample/historical data, validate, load into DB."""
+    """End-to-end: load sample/historical/real data, validate, load into DB."""
     configure_logging()
     init_db()
+
+    loader = _select_loader()
+    logger.info("Parse stage using loader: %s", loader.__name__)
 
     subjects = _validate_rows(loader.load_subjects(), SubjectRecord)
     learning_outcomes = _validate_rows(loader.load_learning_outcomes(), LearningOutcomeRecord)
