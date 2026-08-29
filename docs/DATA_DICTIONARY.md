@@ -44,21 +44,39 @@ written for N8 ("...notes on data fields and security controls").
 |---|---|
 | `score` | 0-100. Read-only from this system's point of view - F12: never write back to the source of truth (Moodle). |
 | `feedback_text` | **Untrusted input** (N5), same as rubric criteria. |
+| `silo_tags_text` | Phase 6/IOG-33. Verbatim copy of the real provided dataset's `SILO's` column ("SILO1: description; SILO2: description"), carried through by `src.connect.excel_loader.load_assessment_results()`. `None` for the synthetic sample dataset, which has no such column. This is what lets `src.model.silo_mapping.extract_skill_gaps()` use explicit institutional tags instead of guessing from feedback wording - see that section below. Still untrusted free text (N5) like `feedback_text`, just structured enough to parse deterministically (`src.connect.excel_loader.parse_silo_tags()`). |
 
 ## `skill_gaps`
 
+Two extraction paths, chosen per result by whether `silo_tags_text` is
+set (Phase 6/IOG-33 - see `src/model/silo_mapping.py`'s module
+docstring for the full rationale):
+
+| Field | Real-dataset path (`silo_tags_text` set) | Sample-dataset path (unset, original heuristic) |
+|---|---|---|
+| `source_evidence_text` | The verbatim `"SILOn: description"` tag. | A verbatim clause of `feedback_text`, split on punctuation/connectives. Required either way - not optional - F4 mandates every gap cite a specific line of rubric/feedback (N5: nothing paraphrased). |
+| `severity` | Score band: `<50` high, `50-69` medium, `70-79` low. No gap at all is recorded for a tagged SILO on a result scoring `>= MASTERY_THRESHOLD` (80). | Keyword-marker match (`HIGH_SEVERITY_MARKERS` / `LOW_SEVERITY_MARKERS`), else `medium`. |
+| `confidence` | Fixed `1.0` (`SILO_TAG_CONFIDENCE`) - an explicit institutional tag is a stated fact about the result, not an inference. | TF-IDF (character n-gram) cosine similarity between the evidence clause and the closest rubric criterion. Below `CONFIDENCE_REVIEW_THRESHOLD` (0.15) -> `reviewed` stays `False`. |
+| `reviewed` | Always `True`. | `confidence >= CONFIDENCE_REVIEW_THRESHOLD`. Either way, only `reviewed=True` gaps may be surfaced to the student (F4) — enforced in `src.deliver.dashboard_api.get_student_dashboard()`. |
+| `learning_outcome_id` | Set by `map_gap_to_learning_outcome()`'s exact-SILO-code match (the tag names its own code) — see next row. | Set by the same function's TF-IDF-similarity fallback, unchanged from the original design. |
+
+`learning_outcome_id` (both paths): set by
+`src.model.silo_mapping.map_gap_to_learning_outcome()` (F5). Tries an
+exact SILO-code match first (only ever succeeds for the real-dataset
+path, whose evidence text names its own code); falls back to TF-IDF
+similarity against the subject's learning-outcome descriptions
+otherwise, left `None` rather than forced onto a weak match below
+`LO_MAPPING_THRESHOLD` (0.08).
+
 | Field | Notes |
 |---|---|
-| `source_evidence_text` | Required, not optional - F4 mandates every gap cite a specific line of rubric/feedback. Populated verbatim from a clause of `assessment_results.feedback_text` by `src.model.silo_mapping.extract_skill_gaps()` — nothing is written here that wasn't literally present in the input (N5). |
-| `confidence` | 0.0-1.0. TF-IDF (character n-gram) cosine similarity between the evidence clause and the closest rubric criterion. Below `CONFIDENCE_REVIEW_THRESHOLD` (0.15) -> `reviewed` stays `False` and it must not be surfaced to the student (F4) — enforced in `src.deliver.dashboard_api.get_student_dashboard()`, which only ever includes `reviewed=True` gaps in a student's outcomes. |
-| `learning_outcome_id` | Set by `src.model.silo_mapping.map_gap_to_learning_outcome()` (F5) — TF-IDF similarity against the subject's learning-outcome descriptions, left `None` rather than forced onto a weak match below `LO_MAPPING_THRESHOLD` (0.08). |
-| `gap_type` | `conceptual` / `application` / `evaluation`, derived deterministically from the matched learning outcome's verb (`gap_type_for()`). Feeds `src.estimate.mastery`'s fixed study-method table (F7); `None` until a learning outcome has been assigned. |
+| `gap_type` | `conceptual` / `application` / `evaluation`, derived deterministically from the matched learning outcome's verb (`gap_type_for()`). Feeds `src.estimate.mastery`'s fixed study-method table (F7); `None` until a learning outcome has been assigned. Unaffected by which extraction path produced the gap. |
 
 ## `mastery_scores`
 
 | Field | Notes |
 |---|---|
-| `score` | 0.0-1.0. `src.estimate.mastery.calculate_mastery_score()` (F6): `clip(mean_assessment_score/100 - Σ(severity_weight × confidence) over reviewed gaps + engagement_bonus, 0, 1)`. Must be reproducible from `explanation_text` + the underlying `skill_gaps` - if you can't explain a number, don't write it. |
+| `score` | 0.0-1.0. `src.estimate.mastery.calculate_mastery_score()` (F6): `clip(mean_assessment_score/100 - Σ(severity_weight × confidence) over reviewed gaps + engagement_bonus, 0, 1)`. Must be reproducible from `explanation_text` + the underlying `skill_gaps` - if you can't explain a number, don't write it. Unchanged by the Phase 6 real-dataset work - it reads `severity`/`confidence`/`learning_outcome_id` off `skill_gaps` the same way regardless of which extraction path wrote them. |
 | `explanation_text` | Built from a template naming the exact baseline percentage, every contributing gap's quote/severity/confidence, and any engagement bonus applied — never freely generated. |
 
 ## `topic_materials`
@@ -67,6 +85,13 @@ written for N8 ("...notes on data fields and security controls").
 |---|---|
 | `passage_text` | Short subject-material passage (F9), pre-split so Estimate can retrieve the closest one by similarity and cite it verbatim rather than asking a model to recall it from memory. |
 | `learning_outcome_id` | Nullable. When set, `generate_study_material()` prefers this SILO's tagged passages before falling back to the whole subject. |
+
+**Real dataset (IOG-33) note:** `src.connect.excel_loader.load_topic_materials()`
+returns an empty, correctly-shaped frame — the real workbook has no
+topic-material passages at all. `src.estimate.mastery` already has an
+honest fallback ("No topic material is available yet... flagged for
+the subject coordinator") for exactly this case, so real-dataset
+students get truthful recommendations, not hallucinated study material.
 
 ## `study_recommendations`
 
@@ -102,5 +127,6 @@ written for N8 ("...notes on data fields and security controls").
 
 - `src.deliver.app` has a lightweight, session-based "login" (pick a demo student number, no password) so the dashboard is reachable end-to-end for a demo — it is explicitly documented in that module as not a real authentication system, and is a separate concern from the RBAC/consent checks above, which are real and exercised through it. A production login system is out of this academic project's scope.
 - Key rotation / secrets management beyond `.env` — fine for this academic scope, not production-grade.
+- **Dataset provenance (IOG-33):** whether `CSE_results_150_students_3_Subjects.xlsx` is a tutor-issued file or team-generated data is not yet confirmed by Ge Su (the ticket's assignee) - the tender brief states "no student data given, team generates it," which this file may or may not satisfy. Not blocking on this: the loader and extraction logic work correctly against the file's actual shape regardless of its origin, but the origin needs to be stated accurately in the final report, so this stays open until confirmed.
 
 See `tests/test_security.py` for the authorization/consent/encryption/audit enforcement behaviour (including that a cross-student dashboard request fails before any of the other student's rows are read), and `tests/test_estimate_mastery.py` / `tests/test_deliver_dashboard.py` for Phase 3/4's own behaviour built on top of those gates.
