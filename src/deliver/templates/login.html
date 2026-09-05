@@ -1,51 +1,48 @@
 {% extends "base.html" %}
 {% block title %}Log in — Learning Journey Assistant{% endblock %}
 {% block content %}
-  <div class="card">
-    <h1>Log in</h1>
-    <p class="muted">
-      Real password sign-in (N1) — your student number/username and password
-      are checked against a stored, salted hash
-      (<code>src.security.authentication</code>), not just picked from a
-      list. Demo accounts and their fixed passwords are documented in
-      <code>docs/ENVIRONMENT_SETUP.md</code>; this is still an academic
-      demonstration, so there's no self-service sign-up, but the check
-      itself is real. Everything after this screen (access control, consent
-      gating) is the same tested Phase 5 security layer as before.
-    </p>
+  <div class="auth-shell">
+    <div class="card">
+      <h1>Log in</h1>
+      <p class="muted">
+        Real password sign-in (N1) — your student number/username and password
+        are checked against a stored, salted hash
+        (<code>src.security.authentication</code>), not just picked from a
+        list. Demo accounts and their fixed passwords are documented in
+        <code>docs/ENVIRONMENT_SETUP.md</code>; this is still an academic
+        demonstration, so there's no self-service sign-up, but the check
+        itself is real. Everything after this screen (access control, consent
+        gating) is the same tested Phase 5 security layer as before.
+      </p>
 
-    <form method="post">
-      <fieldset style="border:none; padding:0; margin: 16px 0;">
-        <legend style="font-weight:600; margin-bottom:8px;">I am a...</legend>
+      <form method="post">
+        <fieldset style="border:none; padding:0; margin: 16px 0 0;">
+          <legend class="muted" style="font-weight:700; margin-bottom:2px;">I am a...</legend>
+          <div class="role-picker">
+            <label><input type="radio" name="role" value="student" checked onchange="ljasToggleLoginFields()"> Student</label>
+            <label><input type="radio" name="role" value="staff" onchange="ljasToggleLoginFields()"> Staff</label>
+            <label><input type="radio" name="role" value="admin" onchange="ljasToggleLoginFields()"> Admin</label>
+          </div>
+        </fieldset>
 
-        <div style="margin-bottom:6px;">
-          <label><input type="radio" name="role" value="student" checked onchange="ljasToggleLoginFields()"> Student</label>
+        <div id="ljas-student-field" style="margin-bottom:10px;">
+          <label for="student_number">Student number</label><br>
+          <input type="text" id="student_number" name="student_number" autocomplete="username" style="width:100%;">
         </div>
-        <div style="margin-bottom:6px;">
-          <label><input type="radio" name="role" value="staff" onchange="ljasToggleLoginFields()"> Staff (can view any student)</label>
+        <div id="ljas-username-field" style="margin-bottom:10px; display:none;">
+          <label for="username">Username</label><br>
+          <input type="text" id="username" name="username" autocomplete="username" style="width:100%;">
         </div>
-        <div style="margin-bottom:10px;">
-          <label><input type="radio" name="role" value="admin" onchange="ljasToggleLoginFields()"> Administrator (can view any student)</label>
+        <div style="margin-bottom:14px;">
+          <label for="password">Password</label><br>
+          <input type="password" id="password" name="password" autocomplete="current-password" style="width:100%;">
         </div>
-      </fieldset>
 
-      <div id="ljas-student-field" style="margin-bottom:10px;">
-        <label for="student_number">Student number</label><br>
-        <input type="text" id="student_number" name="student_number" autocomplete="username">
-      </div>
-      <div id="ljas-username-field" style="margin-bottom:10px; display:none;">
-        <label for="username">Username</label><br>
-        <input type="text" id="username" name="username" autocomplete="username">
-      </div>
-      <div style="margin-bottom:14px;">
-        <label for="password">Password</label><br>
-        <input type="password" id="password" name="password" autocomplete="current-password">
-      </div>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
 
-      {% if error %}<p class="error">{{ error }}</p>{% endif %}
-
-      <button class="primary" type="submit">Log in</button>
-    </form>
+        <button class="primary" type="submit" style="width:100%;">Log in</button>
+      </form>
+    </div>
   </div>
 
   <script>
