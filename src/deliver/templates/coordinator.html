@@ -28,10 +28,20 @@
       <h2>{{ subject.code }} — {{ subject.name }}</h2>
       {% for o in subject.outcomes %}
         <div class="coordinator-outcome">
-          <p><strong>{{ o.code }}</strong> — {{ o.description }}</p>
+          <div class="outcome-head">
+            <div style="display:flex; align-items:flex-start; gap:8px; flex:1; min-width:0;">
+              <span class="outcome-index">{{ loop.index }}</span>
+              <p style="margin:0;"><strong>{{ o.code }}</strong> — {{ o.description }}</p>
+            </div>
+            {% if o.average_mastery_pct is not none %}
+              {% set band = 'good' if o.average_mastery_pct >= 60 else ('warn' if o.average_mastery_pct >= 30 else 'bad') %}
+              <div class="ring ring-sm ring-{{ band }}" style="--pct: {{ o.average_mastery_pct }};">
+                <span class="ring-value">{{ o.average_mastery_pct }}%</span>
+              </div>
+            {% endif %}
+          </div>
           {% if o.average_mastery_pct is not none %}
-            <div class="mastery-bar-track"><div class="mastery-bar-fill" style="width: {{ o.average_mastery_pct }}%;"></div></div>
-            <p class="muted">{{ o.average_mastery_pct }}% average mastery across {{ o.student_count }} student(s)</p>
+            <p class="muted">Average across {{ o.student_count }} student(s)</p>
           {% else %}
             <p class="muted">No mastery data yet for this outcome.</p>
           {% endif %}
