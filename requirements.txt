@@ -42,3 +42,7 @@ pytest-cov>=5.0,<6.0
 # Lint / format (optional but recommended - keeps a shared codebase
 # consistent across 5 people)
 ruff>=0.4,<1.0
+
+# Production WSGI server for deployment (Render/Railway/etc.) - dev uses
+# Flask's built-in server (see src/deliver/app.py), never gunicorn.
+gunicorn>=21.2,<22.0
