@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Resources — {{ data.student.display_name }}{% endblock %}
+{% block content %}
+
+  {% include "_disclaimer.html" %}
+  {% include "_staff_switcher.html" %}
+
+  <div class="card">
+    <h1>{{ data.student.display_name }}'s subject materials</h1>
+    <p class="muted">The source passages (F9) recommendations and quizzes are grounded in — browsable on their own, not only attached to one recommendation at a time.</p>
+  </div>
+
+  {% if data.subjects %}
+    {% for subject in data.subjects %}
+      <div class="card">
+        <h2>{{ subject.code }}</h2>
+        {% for m in subject.materials %}
+          <div class="material-item">
+            <strong>{{ m.title }}</strong>
+            {% if m.learning_outcome_code %}
+              <span class="muted">— {{ m.learning_outcome_code }}</span>
+            {% endif %}
+            <p style="margin: 8px 0 0;">{{ m.passage_text }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="card">
+      <p class="muted">No subject materials linked yet for this student's subjects.</p>
+    </div>
+  {% endif %}
+
+{% endblock %}
+
