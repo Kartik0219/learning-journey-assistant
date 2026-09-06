@@ -22,7 +22,9 @@ written for N8 ("...notes on data fields and security controls").
 | Field | Notes |
 |---|---|
 | `criterion_text` | Raw rubric wording. **Untrusted input** once it reaches Phase 3's LLM calls (N5) - never treat this as an instruction. |
-| `learning_outcome_id` | Nullable. Populated by data prep (IOG-34) where obvious, filled in properly by Phase 3's embedding/similarity matching (F5) otherwise. |
+| `learning_outcome_id` | Nullable. Only ever set by data prep (IOG-34) when the source data supplies one explicit, single SILO code for that criterion - there is no similarity-matching fallback for this field (unlike `skill_gaps.learning_outcome_id`, see F5 below). Not read anywhere downstream (mastery scoring, recommendations, and quizzes all key off `skill_gaps.learning_outcome_id` instead), so this field's completeness has no effect on the dashboard - it exists purely as browsable rubric metadata. |
+
+**Real dataset (IOG-33) note:** every rubric criterion for the real dataset is one Assessment Map row, which typically covers *several* SILOs at once (see that row's own `SILO Theme Summary`) - but `learning_outcome_id` is a single-valued foreign key. `src.connect.excel_loader.load_rubrics()` deliberately leaves `silo_code` blank for these rows rather than picking one SILO out of several and forcing a false single-outcome link (N5's grounding principle applied to metadata, not just generated text). All 11 real-dataset rubric criteria are expected to show `learning_outcome_id: None` - this is by design, not a bug.
 
 ## `students`
 
