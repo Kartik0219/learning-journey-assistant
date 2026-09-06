@@ -191,8 +191,10 @@ at rest, an authorization check, audit logging, and consent gating are
 implemented in `src/security/` (IOG-42), wired into the Estimate stage
 and the dashboard, and covered by `tests/test_security.py`,
 `tests/test_estimate_mastery.py`, and `tests/test_deliver_dashboard.py`.
-What's *not* done yet: real password/credential authentication - the
-dashboard's login (`src.deliver.app`) is an explicitly-disclosed,
-demonstration-level session (pick a demo student/role, no password),
-not a production auth system. Generate your own `ENCRYPTION_KEY` before
-running anything beyond local dev - see `.env.example`.
+Real password/credential authentication (`src/security/authentication.py`,
+IOG-47) is also implemented and wired into `src.deliver.app`'s login -
+what's still demonstration-scope is the account model around it: seeded
+accounts have fixed, documented passwords (see "Demo accounts" above),
+with no self-service sign-up or password-reset flow, not a claim of
+production-grade identity management. Generate your own `ENCRYPTION_KEY`
+before running anything beyond local dev - see `.env.example`.
