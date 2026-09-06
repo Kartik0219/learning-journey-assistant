@@ -20,11 +20,10 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from src.db.models import LearningOutcome, MasteryScore, Student, StudyRecommendation
+from src.db.models import LearningOutcome, MasteryScore, Student, StudyRecommendation, TopicMaterial
 from src.estimate.quiz import latest_quiz_questions
 from src.security.authorization import Actor, require_student_access
 from src.security.consent import ensure_consent_active
-
 
 def _latest_recommendation(
     session: Session, student_id: int, learning_outcome_id: int
@@ -35,7 +34,6 @@ def _latest_recommendation(
         .order_by(StudyRecommendation.created_at.desc())
         .first()
     )
-
 
 def get_student_dashboard(session: Session, actor: Actor, student_id: int) -> dict:
     """F10: assemble mastery, priority topics, and recommended study
@@ -135,5 +133,54 @@ def get_student_dashboard(session: Session, actor: Actor, student_id: int) -> di
         "student": {"id": student.id, "display_name": student.display_name},
         "outcomes": outcomes,
         "priority_outcomes": priority_outcomes,
+        "subjects": subjects,
+    }
+
+def get_student_resources(session: Session, actor: Actor, student_id: int) -> dict:
+    """F9: a browsable list of the grounding source materials for this
+    student's subjects (mobile nav scope-out's Resources tab) - the same
+    TopicMaterial passages recommendations and quizzes are already
+    grounded in (F8's "check each generated item against the subject
+    materials before it is shown"), surfaced here as a standalone
+    reference list rather than only ever attached to one recommendation
+    at a time.
+    """
+    require_student_access(actor, student_id)
+    ensure_consent_active(session, student_id)
+
+    student = session.get(Student, student_id)
+    if student is None:
+        raise ValueError(f"No student with id={student_id}")
+
+    # Same subject-scoping the dashboard's overview strip uses: only
+    # subjects this student actually has a scored outcome in.
+    subject_ids = {
+        mastery.learning_outcome.subject_id
+        for mastery in session.query(MasteryScore).filter_by(student_id=student_id).all()
+    }
+
+    by_subject: dict[str, list[dict]] = {}
+    if subject_ids:
+        materials = (
+            session.query(TopicMaterial)
+            .filter(TopicMaterial.subject_id.in_(subject_ids))
+            .order_by(TopicMaterial.subject_id, TopicMaterial.title)
+            .all()
+        )
+        for material in materials:
+            by_subject.setdefault(material.subject.code, []).append(
+                {
+                    "title": material.title,
+                    "passage_text": material.passage_text,
+                    "learning_outcome_code": (
+                        material.learning_outcome.code if material.learning_outcome else None
+                    ),
+                }
+            )
+
+    subjects = [{"code": code, "materials": materials} for code, materials in by_subject.items()]
+
+    return {
+        "student": {"id": student.id, "display_name": student.display_name},
         "subjects": subjects,
     }
