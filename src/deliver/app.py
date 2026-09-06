@@ -7,20 +7,21 @@ Run it with:
 then open http://127.0.0.1:5000/ - pick a demo student (or Staff/Admin)
 on the login screen.
 
-## Login is demonstration-level, and that's disclosed, not hidden
+## Login is real, but demonstration-scoped
 
 N1 asks for "login and role-based access for Student, Educator and
-Administrator". There is no password system in this codebase - the
-docs (docs/DATA_DICTIONARY.md "Still open") have said so from Phase 5
-onwards, and this app doesn't quietly paper over that. The login screen
-lets you pick which demo student/role you are, which is honest about
-what it is: enough of a session (`flask.session`, a signed cookie) to
-exercise real role-based access control end-to-end, not a claim that
-credential-based authentication has been built. Everything downstream
-of login - `require_student_access`, `ensure_consent_active` - is the
-real, tested IOG-42 security layer; only "how do you prove who you
-are" is stubbed, consistent with the tender's "demonstration-level
-functionality" scope (Section 4.3).
+Administrator". This checks a real salted password hash
+(`src.security.authentication`) against seeded `user_credentials` rows -
+wrong passwords are rejected and every attempt is audit-logged, replacing
+the earlier no-password demo picker (app-build phase, IOG-47). What's
+still demonstration-scope, and disclosed as such in
+docs/DATA_DICTIONARY.md ("Still open"): seeded accounts have fixed,
+documented passwords, with no self-service sign-up or password-reset
+flow - a deliberate scope boundary consistent with the tender's
+"demonstration-level functionality" scope (Section 4.3), not a claim of
+production-grade identity management. Everything downstream of login -
+`require_student_access`, `ensure_consent_active` - is the same real,
+tested IOG-42 security layer either way.
 
 ## App-build phase: Dashboard / My Plan / Quizzes / Resources tabs
 
