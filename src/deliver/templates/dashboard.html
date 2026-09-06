@@ -2,27 +2,8 @@
 {% block title %}Dashboard — {{ data.student.display_name }}{% endblock %}
 {% block content %}
 
-  <div class="disclaimer">
-    <strong>Formative only —</strong> nothing on this page affects your official grade. Mastery percentages, skill gaps, and recommendations are a private study aid built from your own results and rubric feedback; they are never reported to Moodle or used in grading.
-  </div>
-
-  {% if is_staff %}
-    <div class="card staff-switcher">
-      <form method="get">
-        <label for="student_id"><strong>Viewing as {{ actor_role }}:</strong></label>
-        <select name="student_id" id="student_id" onchange="this.form.submit()">
-          {% for s in students %}
-            <option value="{{ s.id }}" {% if s.id == current_student_id %}selected{% endif %}>{{ s.label }}</option>
-          {% endfor %}
-        </select>
-      </form>
-      <p class="muted" style="margin-top:8px;">
-        Staff/Admin can open any student's dashboard (N1) — this is the same
-        <code>require_student_access</code> check a Student actor would
-        instead be blocked by, exercised live rather than only in a test.
-      </p>
-    </div>
-  {% endif %}
+  {% include "_disclaimer.html" %}
+  {% include "_staff_switcher.html" %}
 
   <div class="dash-layout">
     <div class="dash-main">
@@ -98,30 +79,6 @@
                   <span class="badge {{ g.severity }}">{{ g.severity }}</span>
                   "{{ g.evidence }}"
                   <span class="muted">(confidence {{ "%.0f"|format(g.confidence * 100) }}%)</span>
-                </div>
-              {% endfor %}
-            {% endif %}
-
-            {% if o.recommendation %}
-              <div class="recommendation">
-                <strong>Recommended: {{ o.recommendation.method.replace('_', ' ')|capitalize }}</strong>
-                {% if o.recommendation.source_title %}
-                  <span class="muted">— grounded in "{{ o.recommendation.source_title }}"</span>
-                {% endif %}
-                <p>{{ o.recommendation.material_text }}</p>
-                <form class="inline" method="post" action="{{ url_for('practice', recommendation_id=o.recommendation.id) }}">
-                  <input type="hidden" name="student_id" value="{{ data.student.id }}">
-                  <button class="primary" type="submit">Mark as practiced</button>
-                </form>
-              </div>
-            {% endif %}
-
-            {% if o.quiz_questions %}
-              <p style="margin: 14px 0 4px;"><strong>Practice quiz</strong> <span class="muted">(grounded in your recorded gaps, F8)</span></p>
-              {% for q in o.quiz_questions %}
-                <div class="quiz-question">
-                  <span class="badge quiz-{{ q.question_type }}">{{ q.question_type }}</span>
-                  {{ q.question_text }}
                 </div>
               {% endfor %}
             {% endif %}
