@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}My Plan — {{ data.student.display_name }}{% endblock %}
+{% block content %}
+
+  {% include "_disclaimer.html" %}
+  {% include "_staff_switcher.html" %}
+
+  <div class="card">
+    <h1>{{ data.student.display_name }}'s study plan</h1>
+    <p class="muted">Recommended next steps, grounded in your own recorded gaps and subject materials (F7/F8) — not generated from scratch.</p>
+  </div>
+
+  {% set planned = data.outcomes|selectattr('recommendation')|list %}
+  {% if planned %}
+    <div class="outcomes-grid">
+      {% for o in planned %}
+        <div class="card">
+          <div class="outcome-head">
+            <div style="display:flex; align-items:flex-start; gap:8px; flex:1; min-width:0;">
+              <span class="outcome-index">{{ loop.index }}</span>
+              <h2 style="margin:0;">{{ o.code }} — {{ o.description }}</h2>
+            </div>
+            {% if o.mastery_pct is not none %}
+              {% set band = 'good' if o.mastery_pct >= 60 else ('warn' if o.mastery_pct >= 30 else 'bad') %}
+              <div class="ring ring-sm ring-{{ band }}" style="--pct: {{ o.mastery_pct }};">
+                <span class="ring-value">{{ o.mastery_pct }}%</span>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="recommendation">
+            <strong>Recommended: {{ o.recommendation.method.replace('_', ' ')|capitalize }}</strong>
+            {% if o.recommendation.source_title %}
+              <span class="muted">— grounded in "{{ o.recommendation.source_title }}"</span>
+            {% endif %}
+            <p>{{ o.recommendation.material_text }}</p>
+            <form class="inline" method="post" action="{{ url_for('practice', recommendation_id=o.recommendation.id) }}">
+              <input type="hidden" name="student_id" value="{{ data.student.id }}">
+              <button class="primary" type="submit">Mark as practiced</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card">
+      <p class="muted">No study recommendations yet — run the pipeline (<code>python -m src.pipeline</code>) once mastery scores exist for this student.</p>
+    </div>
+  {% endif %}
+
+{% endblock %}
+

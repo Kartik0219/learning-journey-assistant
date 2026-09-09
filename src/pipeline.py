@@ -18,6 +18,7 @@ from src.common.logging_config import configure_logging, get_logger
 from src.db.database import get_session
 from src.db.models import AssessmentResult, LearningOutcome, Student
 from src.estimate.mastery import calculate_mastery_score, generate_study_material
+from src.estimate.quiz import generate_quiz_questions
 from src.model.silo_mapping import extract_skill_gaps, map_gap_to_learning_outcome
 from src.parse.cleaners import run_parse_stage
 from src.security.consent import ConsentError, ensure_consent_active
@@ -40,13 +41,14 @@ def run_model_stage(session) -> tuple[int, int]:
     return gaps_extracted, gaps_mapped
 
 
-def run_estimate_stage(session) -> tuple[int, int]:
+def run_estimate_stage(session) -> tuple[int, int, int]:
     """Phase 4: (re)calculate mastery and generate a fresh study
     recommendation for every student x learning outcome with active
     consent. N2: students without active consent are skipped entirely,
     not just hidden later - ensure_consent_active is the actual gate."""
     scores_written = 0
     recommendations_written = 0
+    questions_written = 0
     outcomes = session.query(LearningOutcome).all()
     for student in session.query(Student).all():
         try:
@@ -59,7 +61,10 @@ def run_estimate_stage(session) -> tuple[int, int]:
             scores_written += 1
             generate_study_material(session, student, lo)
             recommendations_written += 1
-    return scores_written, recommendations_written
+            # App-build phase AI feature (F8): grounded practice questions,
+            # a no-op (empty list) for an outcome with no reviewed gaps.
+            questions_written += len(generate_quiz_questions(session, student, lo))
+    return scores_written, recommendations_written, questions_written
 
 
 def run_pipeline() -> None:
@@ -76,11 +81,13 @@ def run_pipeline() -> None:
         )
 
     with get_session() as session:
-        scores_written, recommendations_written = run_estimate_stage(session)
+        scores_written, recommendations_written, questions_written = run_estimate_stage(session)
         logger.info(
-            "Estimate stage complete: %d mastery score(s), %d study recommendation(s).",
+            "Estimate stage complete: %d mastery score(s), %d study recommendation(s), "
+            "%d quiz question(s).",
             scores_written,
             recommendations_written,
+            questions_written,
         )
 
     logger.info("Pipeline complete. Run `python -m src.deliver.app` to view the dashboard.")

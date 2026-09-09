@@ -1,0 +1,33 @@
+# Render Blueprint for the Learning Journey Assistant demo deployment.
+#
+# Deliberately runs on the bundled synthetic data/sample/ dataset, not the
+# real provided .xlsx (data/provided/ is gitignored and never leaves local
+# dev - see src/config.py and .env.example). HISTORICAL_DATASET_PATH is
+# left unset below on purpose: src.parse.cleaners then falls back to the
+# sample CSVs automatically, exactly like `pytest` and a fresh clone do.
+#
+# The start command re-runs the pipeline on every boot (init_db + parse +
+# model + estimate stages), so the SQLite file is regenerated from the
+# sample CSVs each time the free-tier instance spins up - no persistent
+# disk needed, and nothing sensitive ever touches this service.
+services:
+  - type: web
+    name: learning-journey-assistant-demo
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: "python -m src.pipeline && gunicorn 'src.deliver.app:create_app()' --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        value: sqlite:///./ljas_demo.db
+      - key: APP_SECRET_KEY
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: LOG_LEVEL
+        value: INFO
+      # HISTORICAL_DATASET_PATH intentionally omitted - do not set it here.
+      # Setting it would point the pipeline at data/provided/, which isn't
+      # in this repo and shouldn't be: this service is sample-data only.

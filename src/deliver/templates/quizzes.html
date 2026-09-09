@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Quizzes — {{ data.student.display_name }}{% endblock %}
+{% block content %}
+
+  {% include "_disclaimer.html" %}
+  {% include "_staff_switcher.html" %}
+
+  <div class="card">
+    <h1>{{ data.student.display_name }}'s practice quizzes</h1>
+    <p class="muted">Grounded in your own recorded gaps (F8) — a private self-check, not a graded assessment.</p>
+  </div>
+
+  {% set quizzed = data.outcomes|selectattr('quiz_questions')|list %}
+  {% if quizzed %}
+    <div class="outcomes-grid">
+      {% for o in quizzed %}
+        <div class="card">
+          <div class="outcome-head">
+            <div style="display:flex; align-items:flex-start; gap:8px; flex:1; min-width:0;">
+              <span class="outcome-index">{{ loop.index }}</span>
+              <h2 style="margin:0;">{{ o.code }} — {{ o.description }}</h2>
+            </div>
+            {% if o.mastery_pct is not none %}
+              {% set band = 'good' if o.mastery_pct >= 60 else ('warn' if o.mastery_pct >= 30 else 'bad') %}
+              <div class="ring ring-sm ring-{{ band }}" style="--pct: {{ o.mastery_pct }};">
+                <span class="ring-value">{{ o.mastery_pct }}%</span>
+              </div>
+            {% endif %}
+          </div>
+
+          {% for q in o.quiz_questions %}
+            <div class="quiz-question">
+              <span class="badge quiz-{{ q.question_type }}">{{ q.question_type }}</span>
+              {{ q.question_text }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card">
+      <p class="muted">No practice quiz questions yet — run the pipeline (<code>python -m src.pipeline</code>) once mastery scores exist for this student.</p>
+    </div>
+  {% endif %}
+
+{% endblock %}
+

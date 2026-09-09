@@ -1,0 +1,17 @@
+{% if is_staff %}
+  <div class="card staff-switcher">
+    <form method="get">
+      <label for="student_id"><strong>Viewing as {{ actor_role }}:</strong></label>
+      <select name="student_id" id="student_id" onchange="this.form.submit()">
+        {% for s in students %}
+          <option value="{{ s.id }}" {% if s.id == current_student_id %}selected{% endif %}>{{ s.label }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <p class="muted" style="margin-top:8px;">
+      Staff/Admin can open any student's dashboard (N1) — this is the same
+      <code>require_student_access</code> check a Student actor would
+      instead be blocked by, exercised live rather than only in a test.
+    </p>
+  </div>
+{% endif %}

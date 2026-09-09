@@ -33,6 +33,7 @@ from src.db.models import (
     Student,
     Subject,
     TopicMaterial,
+    UserCredential,
 )
 from src.parse.schema_validation import (
     AssessmentResultRecord,
@@ -43,6 +44,8 @@ from src.parse.schema_validation import (
     TopicMaterialRecord,
 )
 from src.security.audit import log_event
+from src.security.authentication import set_staff_password, set_student_password
+from src.security.authorization import Role
 from src.security.consent import record_consent
 from src.security.encryption import blind_index
 
@@ -240,6 +243,40 @@ def seed_demo_consent(session: Session, students: list[Student]) -> int:
     return seeded
 
 
+def seed_demo_credentials(session: Session, students: list[Student]) -> int:
+    """App-build phase (N1): seed a real, hashed sign-in credential for
+    every student that doesn't already have one, plus one fixed Staff and
+    one fixed Admin demo account.
+
+    The demo password for a student is their own student number (e.g.
+    student DEMO0001 signs in with student number "DEMO0001" and password
+    "DEMO0001") - fixed and documented (see docs/ENVIRONMENT_SETUP.md),
+    the same demonstration-scope disclosure the old picker-based login
+    already made, not a claim of production-grade credential management.
+    Staff/Admin demo credentials are "staff"/"staff123" and
+    "admin"/"admin123" respectively. Idempotent like seed_demo_consent -
+    safe to call on every pipeline run.
+    """
+    seeded = 0
+    for student in students:
+        already_has_credential = (
+            session.query(UserCredential).filter_by(student_id=student.id).one_or_none()
+        )
+        if already_has_credential:
+            continue
+        set_student_password(session, student, student.student_number)
+        seeded += 1
+
+    if not session.query(UserCredential).filter_by(username="staff").one_or_none():
+        set_staff_password(session, "staff", Role.STAFF, "staff123")
+        seeded += 1
+    if not session.query(UserCredential).filter_by(username="admin").one_or_none():
+        set_staff_password(session, "admin", Role.ADMIN, "admin123")
+        seeded += 1
+
+    return seeded
+
+
 def _select_loader():
     """IOG-33/N9: pick the real Excel loader when HISTORICAL_DATASET_PATH
     is set, otherwise fall back to the synthetic CSV loader - same
@@ -280,6 +317,7 @@ def run_parse_stage() -> None:
             upsert_topic_material(session, record)
 
         consented = seed_demo_consent(session, loaded_students)
+        credentials_seeded = seed_demo_credentials(session, loaded_students)
 
         # N4: audit log must record every data import.
         log_event(
@@ -290,7 +328,8 @@ def run_parse_stage() -> None:
                 f"{len(subjects)} subjects, {len(learning_outcomes)} learning outcomes, "
                 f"{len(rubric_criteria)} rubric criteria, {len(students)} students, "
                 f"{len(assessment_results)} assessment results, "
-                f"{len(topic_materials)} topic materials ({consented} consent records seeded)"
+                f"{len(topic_materials)} topic materials ({consented} consent records seeded, "
+                f"{credentials_seeded} sign-in credentials seeded)"
             ),
         )
 

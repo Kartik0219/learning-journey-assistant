@@ -22,7 +22,9 @@ written for N8 ("...notes on data fields and security controls").
 | Field | Notes |
 |---|---|
 | `criterion_text` | Raw rubric wording. **Untrusted input** once it reaches Phase 3's LLM calls (N5) - never treat this as an instruction. |
-| `learning_outcome_id` | Nullable. Populated by data prep (IOG-34) where obvious, filled in properly by Phase 3's embedding/similarity matching (F5) otherwise. |
+| `learning_outcome_id` | Nullable. Only ever set by data prep (IOG-34) when the source data supplies one explicit, single SILO code for that criterion - there is no similarity-matching fallback for this field (unlike `skill_gaps.learning_outcome_id`, see F5 below). Not read anywhere downstream (mastery scoring, recommendations, and quizzes all key off `skill_gaps.learning_outcome_id` instead), so this field's completeness has no effect on the dashboard - it exists purely as browsable rubric metadata. |
+
+**Real dataset (IOG-33) note:** every rubric criterion for the real dataset is one Assessment Map row, which typically covers *several* SILOs at once (see that row's own `SILO Theme Summary`) - but `learning_outcome_id` is a single-valued foreign key. `src.connect.excel_loader.load_rubrics()` deliberately leaves `silo_code` blank for these rows rather than picking one SILO out of several and forcing a false single-outcome link (N5's grounding principle applied to metadata, not just generated text). All 11 real-dataset rubric criteria are expected to show `learning_outcome_id: None` - this is by design, not a bug.
 
 ## `students`
 
@@ -107,12 +109,30 @@ students get truthful recommendations, not hallucinated study material.
 |---|---|
 | `completed` | F11: recording a completion via `src.estimate.mastery.record_engagement()` immediately recalculates the affected `mastery_scores` row with a small, capped bonus (`ENGAGEMENT_BONUS_PER_COMPLETION`, capped at `ENGAGEMENT_BONUS_CAP`) rather than waiting for the next pipeline run. |
 
+## `user_credentials` (app-build phase — Farshad, backend)
+
+| Field | Notes |
+|---|---|
+| `role` | `student` / `staff` / `admin` (`Role.value`). |
+| `student_id` | Set for a `student` credential, unique, FK to `students`. `None` for staff/admin. |
+| `username` | Set for a `staff`/`admin` credential, unique. `None` for a student credential. |
+| `password_hash` | Salted PBKDF2 hash (werkzeug `generate_password_hash`) — never a plaintext password. Checked by `src.security.authentication.authenticate_student` / `authenticate_staff`, called from `src.deliver.app`'s `/login` route. Seeded idempotently by `src.parse.cleaners.seed_demo_credentials` — see docs/ENVIRONMENT_SETUP.md's "Demo accounts" table for the fixed demo values. |
+
+## `quiz_questions` (app-build phase — Prabhashi, AI feature)
+
+| Field | Notes |
+|---|---|
+| `question_text` | Templated, never freely generated (N5) — built from a specific `SkillGap.source_evidence_text` (itself a verbatim quote) plus the closest `TopicMaterial` passage by TF-IDF cosine similarity (`src.model.silo_mapping.best_similarity`), the same grounding-by-retrieval pattern `study_recommendations.material_text` already uses. See `src/estimate/quiz.py`. |
+| `question_type` | `recall` / `apply` / `evaluate` — derived deterministically from the mapped learning outcome's gap type (`src.model.silo_mapping.gap_type_for`), the same classification F7's study-method table already uses. Not a model's judgment call. |
+| `source_skill_gap_id` | The specific reviewed `SkillGap` this question was built from — F4's evidentiary standard applied to quiz questions too. |
+| `source_topic_material_id` | Nullable — `None` when the subject has no topic material yet, same honest fallback as `study_recommendations.source_topic_material_id`. |
+
 ## `audit_log_entries`
 
 | Field | Notes |
 |---|---|
 | `actor` | A `student_number` or `"system"`. Stored in **plain text on purpose** — an audit trail staff can actually read during a review is the point of N4; encrypting the actor field would defeat that. This is a deliberate scope boundary, not an oversight. |
-| (all) | Append-only — write with `src.security.audit.log_event()`, never construct a row by hand or `UPDATE`/`DELETE` one. Currently written on every `run_parse_stage()` call (`data_import`) and every `record_consent()` call (`consent_given` / `consent_withdrawn`). Sign-in and quiz/plan-creation events will be added once Phases 4/6 build the features that produce them. |
+| (all) | Append-only — write with `src.security.audit.log_event()`, never construct a row by hand or `UPDATE`/`DELETE` one. Written on every `run_parse_stage()` call (`data_import`), every `record_consent()` call (`consent_given` / `consent_withdrawn`), and now every login attempt too (`sign_in` / `sign_in_failed`, from `src.deliver.app`'s `/login` route, app-build phase). Quiz-creation isn't separately audit-logged — `quiz_questions` rows are themselves the record, written by the same `run_estimate_stage` pipeline step as `mastery_scores`/`study_recommendations`, none of which get a per-row audit entry either. |
 
 ## Security controls status (N3, N4, N6 — IOG-42)
 
@@ -125,7 +145,7 @@ students get truthful recommendations, not hallucinated study material.
 
 **Still open:**
 
-- `src.deliver.app` has a lightweight, session-based "login" (pick a demo student number, no password) so the dashboard is reachable end-to-end for a demo — it is explicitly documented in that module as not a real authentication system, and is a separate concern from the RBAC/consent checks above, which are real and exercised through it. A production login system is out of this academic project's scope.
+- `src.deliver.app`'s login now does a real password check (`src.security.authentication`, app-build phase) — salted hashes, wrong passwords rejected, every attempt audit-logged — rather than the earlier no-password picker. What's still demonstration-scope: seeded accounts have fixed, documented passwords (no self-service sign-up, no password reset flow) — a deliberate scope boundary for an academic project, not a claim of production-grade identity management. RBAC/consent checks downstream of login are unchanged and remain real.
 - Key rotation / secrets management beyond `.env` — fine for this academic scope, not production-grade.
 - **Dataset provenance (IOG-33):** whether `CSE_results_150_students_3_Subjects.xlsx` is a tutor-issued file or team-generated data is not yet confirmed by Ge Su (the ticket's assignee) - the tender brief states "no student data given, team generates it," which this file may or may not satisfy. Not blocking on this: the loader and extraction logic work correctly against the file's actual shape regardless of its origin, but the origin needs to be stated accurately in the final report, so this stays open until confirmed.
 

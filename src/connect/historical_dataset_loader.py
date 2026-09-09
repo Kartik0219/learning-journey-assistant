@@ -49,3 +49,15 @@ def load_students() -> pd.DataFrame:
 
 def load_assessment_results() -> pd.DataFrame:
     return _load_csv("assessment_results_sample.csv")
+
+
+def load_topic_materials() -> pd.DataFrame:
+    """F9: grounded-citation source passages for the sample dataset.
+
+    Added alongside the excel_loader's own load_topic_materials() - this
+    one was missing even though data/sample/topic_materials_sample.csv
+    has shipped since Phase 2, which made `python -m src.pipeline` (and
+    any full run against sample data, e.g. a fresh clone or a deploy with
+    HISTORICAL_DATASET_PATH unset) fail with AttributeError before ever
+    reaching the model/estimate stages."""
+    return _load_csv("topic_materials_sample.csv")

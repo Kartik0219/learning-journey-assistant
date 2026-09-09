@@ -2,79 +2,111 @@
 {% block title %}Dashboard — {{ data.student.display_name }}{% endblock %}
 {% block content %}
 
-  {% if is_staff %}
-    <div class="card staff-switcher">
-      <form method="get">
-        <label for="student_id"><strong>Viewing as {{ actor_role }}:</strong></label>
-        <select name="student_id" id="student_id" onchange="this.form.submit()">
-          {% for s in students %}
-            <option value="{{ s.id }}" {% if s.id == current_student_id %}selected{% endif %}>{{ s.label }}</option>
-          {% endfor %}
-        </select>
-      </form>
-      <p class="muted" style="margin-top:8px;">
-        Staff/Admin can open any student's dashboard (N1) — this is the same
-        <code>require_student_access</code> check a Student actor would
-        instead be blocked by, exercised live rather than only in a test.
-      </p>
-    </div>
-  {% endif %}
+  {% include "_disclaimer.html" %}
+  {% include "_staff_switcher.html" %}
 
-  <div class="card">
-    <h1>{{ data.student.display_name }}'s learning journey</h1>
-    <p class="muted">Mastery by learning outcome, with the evidence behind every number (F6).</p>
-  </div>
+  <div class="dash-layout">
+    <div class="dash-main">
 
-  <div class="card">
-    <h2>Priority topics</h2>
-    {% if data.priority_outcomes %}
-      <table class="priority">
-        <tr><th>Outcome</th><th>Mastery</th></tr>
-        {% for o in data.priority_outcomes %}
-          <tr><td>{{ o.code }} — {{ o.description }}</td><td>{{ o.mastery_pct }}%</td></tr>
-        {% endfor %}
-      </table>
-    {% else %}
-      <p class="muted">Mastery hasn't been calculated yet — run the pipeline (<code>python -m src.pipeline</code>).</p>
-    {% endif %}
-  </div>
+      <div class="card">
+        <h1>{{ data.student.display_name }}'s learning journey</h1>
+        <p class="muted">Mastery by learning outcome, with the evidence behind every number (F6).</p>
+      </div>
 
-  {% for o in data.outcomes %}
-    <div class="card">
-      <h2>{{ o.code }} — {{ o.description }}</h2>
+      {% set avg_mastery = (data.subjects|sum(attribute='average_mastery_pct') / (data.subjects|length))|round(0, 'floor')|int if data.subjects|length > 0 else none %}
+      <div class="stats-strip">
+        <div class="stat-tile">
+          <span class="stat-value">{{ avg_mastery if avg_mastery is not none else '—' }}{{ '%' if avg_mastery is not none else '' }}</span>
+          <span class="stat-label">Overall mastery</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value">{{ data.subjects|length }}</span>
+          <span class="stat-label">Subjects</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value">{{ data.outcomes|length }}</span>
+          <span class="stat-label">Outcomes tracked</span>
+        </div>
+        <div class="stat-tile warn">
+          <span class="stat-value">{{ data.priority_outcomes|length }}</span>
+          <span class="stat-label">Need attention</span>
+        </div>
+      </div>
 
-      {% if o.mastery_pct is not none %}
-        <div class="mastery-bar-track"><div class="mastery-bar-fill" style="width: {{ o.mastery_pct }}%;"></div></div>
-        <p class="muted">{{ o.mastery_pct }}% mastery — {{ o.explanation }}</p>
-      {% else %}
-        <p class="muted">Not yet calculated for this outcome.</p>
-      {% endif %}
-
-      {% if o.gaps %}
-        <p style="margin-bottom:4px;"><strong>Recorded skill gaps</strong> <span class="muted">(reviewed, F4)</span></p>
-        {% for g in o.gaps %}
-          <div class="gap-item">
-            <span class="badge {{ g.severity }}">{{ g.severity }}</span>
-            "{{ g.evidence }}"
-            <span class="muted">(confidence {{ "%.0f"|format(g.confidence * 100) }}%)</span>
+      {% if data.subjects|length > 1 %}
+        <div class="card">
+          <h2>Subjects overview</h2>
+          <div class="subject-overview">
+            {% for s in data.subjects %}
+              {% set band = 'good' if s.average_mastery_pct >= 60 else ('warn' if s.average_mastery_pct >= 30 else 'bad') %}
+              <div class="subject-chip">
+                <div class="ring ring-{{ band }}" style="--pct: {{ s.average_mastery_pct }};">
+                  <span class="ring-value">{{ s.average_mastery_pct }}%</span>
+                </div>
+                <span class="subject-chip-code">{{ s.code }}</span>
+              </div>
+            {% endfor %}
           </div>
-        {% endfor %}
-      {% endif %}
-
-      {% if o.recommendation %}
-        <div class="recommendation">
-          <strong>Recommended: {{ o.recommendation.method.replace('_', ' ')|capitalize }}</strong>
-          {% if o.recommendation.source_title %}
-            <span class="muted">— grounded in "{{ o.recommendation.source_title }}"</span>
-          {% endif %}
-          <p>{{ o.recommendation.material_text }}</p>
-          <form class="inline" method="post" action="{{ url_for('practice', recommendation_id=o.recommendation.id) }}">
-            <input type="hidden" name="student_id" value="{{ data.student.id }}">
-            <button class="primary" type="submit">Mark as practiced</button>
-          </form>
         </div>
       {% endif %}
+
+      <div class="outcomes-grid">
+        {% for o in data.outcomes %}
+          <div class="card">
+            <div class="outcome-head">
+              <div style="display:flex; align-items:flex-start; gap:8px; flex:1; min-width:0;">
+                <span class="outcome-index">{{ loop.index }}</span>
+                <h2 style="margin:0;">{{ o.code }} — {{ o.description }}</h2>
+              </div>
+              {% if o.mastery_pct is not none %}
+                {% set band = 'good' if o.mastery_pct >= 60 else ('warn' if o.mastery_pct >= 30 else 'bad') %}
+                <div class="ring ring-sm ring-{{ band }}" style="--pct: {{ o.mastery_pct }};">
+                  <span class="ring-value">{{ o.mastery_pct }}%</span>
+                </div>
+              {% endif %}
+            </div>
+
+            {% if o.mastery_pct is not none %}
+              <p class="muted">{{ o.explanation }}</p>
+            {% else %}
+              <p class="muted">Not yet calculated for this outcome.</p>
+            {% endif %}
+
+            {% if o.gaps %}
+              <p style="margin-bottom:4px;"><strong>Recorded skill gaps</strong> <span class="muted">(reviewed, F4)</span></p>
+              {% for g in o.gaps %}
+                <div class="gap-item">
+                  <span class="badge {{ g.severity }}">{{ g.severity }}</span>
+                  "{{ g.evidence }}"
+                  <span class="muted">(confidence {{ "%.0f"|format(g.confidence * 100) }}%)</span>
+                </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
     </div>
-  {% endfor %}
+
+    <aside class="dash-side">
+      <div class="card">
+        <h2>Priority topics</h2>
+        {% if data.priority_outcomes %}
+          <div class="priority-list">
+            {% for o in data.priority_outcomes %}
+              {% set band = 'good' if o.mastery_pct >= 60 else ('warn' if o.mastery_pct >= 30 else 'bad') %}
+              <div class="priority-row">
+                <span class="priority-dot {{ band }}"></span>
+                <span class="priority-text">{{ o.code }} — {{ o.description }}</span>
+                <span class="priority-pct {{ band }}">{{ o.mastery_pct }}%</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted">Mastery hasn't been calculated yet — run the pipeline (<code>python -m src.pipeline</code>).</p>
+        {% endif %}
+      </div>
+    </aside>
+  </div>
 
 {% endblock %}
