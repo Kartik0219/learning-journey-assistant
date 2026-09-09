@@ -1,5 +1,11 @@
 # Learning Journey Assistant
 AI-powered formative tool that bridges the gap between student assessment feedback and academic improvement.
+## Live Demo
+
+**[https://learning-journey-assistant.onrender.com](https://learning-journey-assistant.onrender.com)**
+
+Deployed on Render's free tier, so the instance spins down after inactivity — the first request can take 50+ seconds to respond. Demo sign-in accounts and passwords are documented in `docs/ENVIRONMENT_SETUP.md`. This demo runs only against the bundled synthetic sample dataset (see `render.yaml`), never the real student data.
+
 ## Overview
 Valuable academic data currently sits isolated in Moodle, leaving students unsure how to turn feedback into a concrete improvement plan. Learning Journey Assistant securely connects subject descriptions, rubrics, and grade results to continuously evaluate a student's performance against learning outcomes, without altering official grades.
 ## Core Features
