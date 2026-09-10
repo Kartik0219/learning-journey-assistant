@@ -78,6 +78,16 @@ def get_student_dashboard(session: Session, actor: Actor, student_id: int) -> di
                 "id": q.id,
                 "question_text": q.question_text,
                 "question_type": q.question_type,
+                # The grounded "model answer" for the interactive quiz: the
+                # source TopicMaterial passage this question was built from
+                # (F8/F9 grounding), surfaced separately so the quiz UI can
+                # reveal it after the student attempts their own answer.
+                "answer_title": (
+                    q.source_topic_material.title if q.source_topic_material else None
+                ),
+                "answer_text": (
+                    q.source_topic_material.passage_text if q.source_topic_material else None
+                ),
             }
             for q in latest_quiz_questions(session, student_id, lo.id)
         ]
