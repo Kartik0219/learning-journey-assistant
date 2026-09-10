@@ -41,6 +41,7 @@ from flask import Flask, abort, redirect, render_template, request, session, url
 from src.config import get_settings
 from src.db.database import get_session
 from src.db.models import Student
+from src.deliver.ai_insight_api import get_ai_insight
 from src.deliver.coordinator_api import get_coordinator_report
 from src.deliver.dashboard_api import get_student_dashboard, get_student_resources
 from src.estimate.mastery import record_engagement
@@ -241,6 +242,35 @@ def create_app() -> Flask:
 
             return render_template(
                 "resources.html",
+                data=data,
+                actor_role=actor.role.value,
+                is_staff=actor.role != Role.STUDENT,
+                students=students,
+                current_student_id=target_student_id,
+            )
+
+    @app.route("/ai-insight")
+    def ai_insight():
+        """IOG-52: opt-in AI (LLM) insight for the current student. Renders the
+        natural-language SYSTEM_PROMPT analysis when a provider is configured,
+        otherwise an "enable it" notice pointing back to the dashboard - the
+        local TF-IDF view stays the source of truth either way."""
+        if "role" not in session:
+            return redirect(url_for("login"))
+
+        with get_session() as db_session:
+            actor, students, target_student_id = _resolve_actor_and_target(db_session)
+            try:
+                data = get_ai_insight(db_session, actor, target_student_id)
+            except AuthorizationError:
+                abort(403)
+            except ConsentError:
+                return render_template(
+                    "no_consent.html", student_id=target_student_id, actor_role=actor.role.value
+                )
+
+            return render_template(
+                "ai_insight.html",
                 data=data,
                 actor_role=actor.role.value,
                 is_staff=actor.role != Role.STUDENT,

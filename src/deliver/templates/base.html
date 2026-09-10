@@ -314,7 +314,8 @@
         <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">Dashboard</a> —
         <a href="{{ url_for('plan') }}" class="{{ 'active' if request.endpoint == 'plan' else '' }}">My Plan</a> —
         <a href="{{ url_for('quizzes') }}" class="{{ 'active' if request.endpoint == 'quizzes' else '' }}">Quizzes</a> —
-        <a href="{{ url_for('resources') }}" class="{{ 'active' if request.endpoint == 'resources' else '' }}">Resources</a>
+        <a href="{{ url_for('resources') }}" class="{{ 'active' if request.endpoint == 'resources' else '' }}">Resources</a> —
+        <a href="{{ url_for('ai_insight') }}" class="{{ 'active' if request.endpoint == 'ai_insight' else '' }}">AI Insight</a>
       </nav>
       <span>
         {% if session.get('role') in ('staff', 'admin') %}
@@ -333,6 +334,7 @@
       <a href="{{ url_for('plan') }}" class="{{ 'active' if request.endpoint == 'plan' else '' }}" {% if request.endpoint == 'plan' %}aria-current="page"{% endif %}>My Plan</a>
       <a href="{{ url_for('quizzes') }}" class="{{ 'active' if request.endpoint == 'quizzes' else '' }}" {% if request.endpoint == 'quizzes' %}aria-current="page"{% endif %}>Quizzes</a>
       <a href="{{ url_for('resources') }}" class="{{ 'active' if request.endpoint == 'resources' else '' }}" {% if request.endpoint == 'resources' %}aria-current="page"{% endif %}>Resources</a>
+      <a href="{{ url_for('ai_insight') }}" class="{{ 'active' if request.endpoint == 'ai_insight' else '' }}" {% if request.endpoint == 'ai_insight' %}aria-current="page"{% endif %}>AI Insight</a>
     </nav>
   {% endif %}
 </body>
