@@ -85,7 +85,7 @@ def create_app() -> Flask:
     def index():
         if "role" in session:
             return redirect(url_for("dashboard"))
-        return redirect(url_for("login"))
+        return render_template("landing.html")
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
