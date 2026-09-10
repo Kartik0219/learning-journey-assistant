@@ -31,3 +31,18 @@ services:
       # HISTORICAL_DATASET_PATH intentionally omitted - do not set it here.
       # Setting it would point the pipeline at data/provided/, which isn't
       # in this repo and shouldn't be: this service is sample-data only.
+      #
+      # --- Optional AI (LLM) path (IOG-37/39/52/53) --------------------------
+      # The AI insight page (/ai-insight) is OFF unless a provider is set.
+      # Leaving these unset keeps the deploy on the local, explainable TF-IDF
+      # engine (the tender's no-hallucination / free-tier default). To enable
+      # Claude, uncomment and set the key in the Render dashboard (sync: false
+      # means the value is entered there, never committed):
+      # - key: LLM_PROVIDER
+      #   value: anthropic
+      # - key: LLM_API_KEY
+      #   sync: false
+      # - key: LLM_MODEL
+      #   value: claude-sonnet-4-5
+      # Note: enabling this sends student feedback text to an external API on
+      # each analysis, so confirm consent (N2) and cost before switching on.
