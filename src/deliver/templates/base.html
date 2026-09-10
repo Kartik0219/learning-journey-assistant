@@ -38,8 +38,47 @@
       --radius: 20px;
       --font-display: 'Space Grotesk', 'Inter', -apple-system, "Segoe UI", system-ui, sans-serif;
       --font: 'Inter', -apple-system, "Segoe UI", system-ui, Arial, sans-serif;
+      --header-bg: rgba(255,255,255,0.72);
     }
+
+    /* Dark theme — toggled via data-theme on <html>, remembered in localStorage. */
+    :root[data-theme="dark"] {
+      --bg: #0b1020;
+      --bg-grad-1: #171a3a;
+      --bg-grad-2: #0c2b28;
+      --surface: #151a2e;
+      --surface-2: #1d2338;
+      --border: rgba(255,255,255,0.09);
+      --border-strong: rgba(255,255,255,0.16);
+      --ink: #eef2ff;
+      --muted: #97a3c4;
+      --primary: #818cf8;
+      --primary-2: #a5b4fc;
+      --primary-soft: #232a4d;
+      --good: #34d399;
+      --good-soft: #0f3b30;
+      --warn: #fbbf24;
+      --warn-soft: #3a2c0a;
+      --bad: #f87171;
+      --bad-soft: #3a1414;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+      --shadow: 0 6px 24px rgba(0,0,0,0.45);
+      --shadow-lg: 0 16px 46px rgba(0,0,0,0.55);
+      --header-bg: rgba(17,22,42,0.72);
+    }
+
     * { box-sizing: border-box; }
+    @media (prefers-reduced-motion: no-preference) {
+      .card { animation: rise .4s ease both; }
+      @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    }
+    .theme-toggle {
+      background: var(--surface-2); border: 1px solid var(--border); color: var(--ink);
+      width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 1rem;
+      display: inline-flex; align-items: center; justify-content: center; transition: background .15s ease, transform .1s ease;
+    }
+    .theme-toggle:hover { background: var(--primary-soft); }
+    .theme-toggle:active { transform: scale(0.94); }
     html { scroll-behavior: smooth; }
     body {
       margin: 0;
@@ -57,7 +96,7 @@
     /* ---- Top bar ---- */
     header.top {
       position: sticky; top: 0; z-index: 30;
-      background: rgba(255,255,255,0.72);
+      background: var(--header-bg);
       backdrop-filter: saturate(180%) blur(14px);
       -webkit-backdrop-filter: saturate(180%) blur(14px);
       border-bottom: 1px solid var(--border);
@@ -309,6 +348,17 @@
       nav.bottom-nav a.active { color: var(--primary); }
     }
   </style>
+  <script>
+    // Apply saved theme before paint to avoid a flash.
+    (function () {
+      try {
+        var t = localStorage.getItem('lja-theme');
+        if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.setAttribute('data-theme', 'dark');
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <header class="top">
@@ -326,7 +376,10 @@
           <a href="{{ url_for('coordinator') }}">Coordinator</a> ·
         {% endif %}
         {{ session.get('role')|capitalize }} · <a href="{{ url_for('logout') }}">Log out</a>
+        <button type="button" class="theme-toggle" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" style="margin-left:10px; vertical-align:middle;">🌙</button>
       </span>
+    {% else %}
+      <button type="button" class="theme-toggle" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
     {% endif %}
   </header>
   <main>
@@ -341,5 +394,20 @@
       <a href="{{ url_for('ai_insight') }}" class="{{ 'active' if request.endpoint == 'ai_insight' else '' }}" {% if request.endpoint == 'ai_insight' %}aria-current="page"{% endif %}>AI</a>
     </nav>
   {% endif %}
+  <script>
+    (function () {
+      var btn = document.getElementById('theme-toggle');
+      if (!btn) return;
+      function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
+      function sync() { btn.textContent = isDark() ? '☀️' : '🌙'; }
+      sync();
+      btn.addEventListener('click', function () {
+        var next = isDark() ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('lja-theme', next); } catch (e) {}
+        sync();
+      });
+    })();
+  </script>
 </body>
 </html>
