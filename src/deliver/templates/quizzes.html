@@ -5,43 +5,148 @@
   {% include "_disclaimer.html" %}
   {% include "_staff_switcher.html" %}
 
+  {# Flatten every outcome's questions into one list for the interactive quiz. #}
+  {% set quiz_items = [] %}
+  {% for o in data.outcomes %}
+    {% for q in o.quiz_questions %}
+      {% set _ = quiz_items.append({
+        "code": o.code,
+        "description": o.description,
+        "type": q.question_type,
+        "question": q.question_text,
+        "answerTitle": q.answer_title,
+        "answerText": q.answer_text,
+      }) %}
+    {% endfor %}
+  {% endfor %}
+
   <div class="card">
     <h1>{{ data.student.display_name }}'s practice quizzes</h1>
     <p class="muted">Grounded in your own recorded gaps (F8) — a private self-check, not a graded assessment.</p>
   </div>
 
-  {% set quizzed = data.outcomes|selectattr('quiz_questions')|list %}
-  {% if quizzed %}
-    <div class="outcomes-grid">
-      {% for o in quizzed %}
-        <div class="card">
-          <div class="outcome-head">
-            <div style="display:flex; align-items:flex-start; gap:8px; flex:1; min-width:0;">
-              <span class="outcome-index">{{ loop.index }}</span>
-              <h2 style="margin:0;">{{ o.code }} — {{ o.description }}</h2>
-            </div>
-            {% if o.mastery_pct is not none %}
-              {% set band = 'good' if o.mastery_pct >= 60 else ('warn' if o.mastery_pct >= 30 else 'bad') %}
-              <div class="ring ring-sm ring-{{ band }}" style="--pct: {{ o.mastery_pct }};">
-                <span class="ring-value">{{ o.mastery_pct }}%</span>
-              </div>
-            {% endif %}
-          </div>
+  {% if quiz_items %}
+    <script id="quiz-data" type="application/json">{{ quiz_items|tojson }}</script>
 
-          {% for q in o.quiz_questions %}
-            <div class="quiz-question">
-              <span class="badge quiz-{{ q.question_type }}">{{ q.question_type }}</span>
-              {{ q.question_text }}
-            </div>
-          {% endfor %}
-        </div>
-      {% endfor %}
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <label for="quiz-count" style="margin:0;">Questions</label>
+        <select id="quiz-count">
+          <option value="3">3</option>
+          <option value="5" selected>5</option>
+          <option value="all">All</option>
+        </select>
+        <button class="primary" type="button" id="quiz-generate">🎲 Generate a random quiz</button>
+        <span class="muted" id="quiz-pool"></span>
+      </div>
     </div>
+
+    <div id="quiz-area"></div>
+
+    <div class="card" id="quiz-actions" hidden>
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <button class="primary" type="button" id="quiz-finish">Finish &amp; reveal answers</button>
+        <button type="button" id="quiz-again"
+                style="background:none; border:1px solid var(--border-strong); border-radius:12px; padding:10px 18px; font-weight:600; cursor:pointer; color:var(--ink);">
+          New quiz
+        </button>
+        <span class="muted" id="quiz-score"></span>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var ALL = JSON.parse(document.getElementById('quiz-data').textContent);
+        var area = document.getElementById('quiz-area');
+        var actions = document.getElementById('quiz-actions');
+        var scoreEl = document.getElementById('quiz-score');
+        document.getElementById('quiz-pool').textContent = ALL.length + ' question(s) available';
+
+        // The generator embeds the model answer inside the question text; for
+        // the quiz we show a clean prompt and reveal the grounded answer after.
+        function cleanPrompt(text) {
+          var cut = text.indexOf('Ground your answer in');
+          if (cut === -1) cut = text.indexOf('No topic material');
+          return (cut === -1 ? text : text.slice(0, cut)).trim();
+        }
+
+        function shuffle(a) {
+          a = a.slice();
+          for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = a[i]; a[i] = a[j]; a[j] = t;
+          }
+          return a;
+        }
+
+        var current = [];
+
+        function render() {
+          var sel = document.getElementById('quiz-count').value;
+          var n = sel === 'all' ? ALL.length : Math.min(parseInt(sel, 10), ALL.length);
+          current = shuffle(ALL).slice(0, n);
+          scoreEl.textContent = '';
+
+          area.innerHTML = current.map(function (q, i) {
+            var answer = q.answerText
+              ? '<strong>' + (q.answerTitle || 'Model answer') + '</strong><p style="margin:8px 0 0;">' + q.answerText + '</p>'
+              : 'No model material is recorded for this outcome yet.';
+            return (
+              '<div class="card quiz-card" data-i="' + i + '">' +
+                '<div class="outcome-head">' +
+                  '<div style="display:flex; align-items:flex-start; gap:8px; flex:1; min-width:0;">' +
+                    '<span class="outcome-index">' + (i + 1) + '</span>' +
+                    '<h2 style="margin:0;">' + q.code + ' — ' + q.description + '</h2>' +
+                  '</div>' +
+                  '<span class="badge quiz-' + q.type + '">' + q.type + '</span>' +
+                '</div>' +
+                '<p style="margin:6px 0 10px;">' + cleanPrompt(q.question) + '</p>' +
+                '<textarea class="quiz-answer" rows="3" placeholder="Type your answer…" ' +
+                  'style="width:100%; resize:vertical;"></textarea>' +
+                '<div class="recommendation model-answer" hidden>' + answer +
+                  '<div class="self-check" style="margin-top:12px;" hidden>' +
+                    '<span class="muted">How did you go?</span> ' +
+                    '<label style="margin-left:8px;"><input type="radio" name="sc' + i + '" value="1"> Got it</label> ' +
+                    '<label style="margin-left:12px;"><input type="radio" name="sc' + i + '" value="0"> Need review</label>' +
+                  '</div>' +
+                '</div>' +
+              '</div>'
+            );
+          }).join('');
+
+          actions.hidden = false;
+          document.getElementById('quiz-finish').hidden = false;
+          window.scrollTo({ top: area.offsetTop - 20, behavior: 'smooth' });
+        }
+
+        function finish() {
+          var cards = area.querySelectorAll('.quiz-card');
+          cards.forEach(function (c) {
+            c.querySelector('.model-answer').hidden = false;
+            c.querySelector('.self-check').hidden = false;
+          });
+          document.getElementById('quiz-finish').hidden = true;
+          scoreEl.textContent = 'Answers revealed — self-rate each one below.';
+
+          area.addEventListener('change', tally);
+          tally();
+        }
+
+        function tally() {
+          var total = current.length;
+          var got = area.querySelectorAll('input[type="radio"][value="1"]:checked').length;
+          scoreEl.textContent = 'You rated ' + got + ' / ' + total + ' as "got it".';
+        }
+
+        document.getElementById('quiz-generate').addEventListener('click', render);
+        document.getElementById('quiz-again').addEventListener('click', render);
+        document.getElementById('quiz-finish').addEventListener('click', finish);
+      })();
+    </script>
   {% else %}
     <div class="card">
-      <p class="muted">No practice quiz questions yet — run the pipeline (<code>python -m src.pipeline</code>) once mastery scores exist for this student.</p>
+      <p class="muted">No practice quiz questions yet — they're generated from your reviewed skill gaps.</p>
     </div>
   {% endif %}
 
 {% endblock %}
-

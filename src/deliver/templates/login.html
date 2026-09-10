@@ -4,16 +4,7 @@
   <div class="auth-shell">
     <div class="card">
       <h1>Log in</h1>
-      <p class="muted">
-        Real password sign-in (N1) — your student number/username and password
-        are checked against a stored, salted hash
-        (<code>src.security.authentication</code>), not just picked from a
-        list. Demo accounts and their fixed passwords are documented in
-        <code>docs/ENVIRONMENT_SETUP.md</code>; this is still an academic
-        demonstration, so there's no self-service sign-up, but the check
-        itself is real. Everything after this screen (access control, consent
-        gating) is the same tested Phase 5 security layer as before.
-      </p>
+      <p class="muted">Sign in to view your learning journey.</p>
 
       <form method="post">
         <fieldset style="border:none; padding:0; margin: 16px 0 0;">
@@ -42,6 +33,11 @@
 
         <button class="primary" type="submit" style="width:100%;">Log in</button>
       </form>
+
+      <p class="muted" style="margin-top:16px; font-size:0.8rem; text-align:center;">
+        Demo: student <code>DEMO0001</code> / <code>DEMO0001</code> ·
+        staff <code>staff</code> / <code>staff123</code>
+      </p>
     </div>
   </div>
 

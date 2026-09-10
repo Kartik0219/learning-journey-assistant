@@ -52,36 +52,45 @@
 
       <div class="outcomes-grid">
         {% for o in data.outcomes %}
-          <div class="card">
-            <div class="outcome-head">
+          <div class="card outcome-card">
+            <div class="outcome-head outcome-toggle" role="button" tabindex="0" aria-expanded="false" style="cursor:pointer;">
               <div style="display:flex; align-items:flex-start; gap:8px; flex:1; min-width:0;">
                 <span class="outcome-index">{{ loop.index }}</span>
                 <h2 style="margin:0;">{{ o.code }} — {{ o.description }}</h2>
               </div>
-              {% if o.mastery_pct is not none %}
-                {% set band = 'good' if o.mastery_pct >= 60 else ('warn' if o.mastery_pct >= 30 else 'bad') %}
-                <div class="ring ring-sm ring-{{ band }}" style="--pct: {{ o.mastery_pct }};">
-                  <span class="ring-value">{{ o.mastery_pct }}%</span>
-                </div>
-              {% endif %}
+              <div style="display:flex; align-items:center; gap:10px;">
+                {% if o.mastery_pct is not none %}
+                  {% set band = 'good' if o.mastery_pct >= 60 else ('warn' if o.mastery_pct >= 30 else 'bad') %}
+                  <div class="ring ring-sm ring-{{ band }}" style="--pct: {{ o.mastery_pct }};">
+                    <span class="ring-value">{{ o.mastery_pct }}%</span>
+                  </div>
+                {% endif %}
+                <span class="chevron" aria-hidden="true">▸</span>
+              </div>
             </div>
 
-            {% if o.mastery_pct is not none %}
-              <p class="muted">{{ o.explanation }}</p>
-            {% else %}
-              <p class="muted">Not yet calculated for this outcome.</p>
-            {% endif %}
+            <p class="muted collapsed-hint" style="margin:8px 0 0;">
+              {% if o.gaps %}{{ o.gaps|length }} recorded gap(s) · click to expand{% else %}Click to expand details{% endif %}
+            </p>
 
-            {% if o.gaps %}
-              <p style="margin-bottom:4px;"><strong>Recorded skill gaps</strong> <span class="muted">(reviewed, F4)</span></p>
-              {% for g in o.gaps %}
-                <div class="gap-item">
-                  <span class="badge {{ g.severity }}">{{ g.severity }}</span>
-                  "{{ g.evidence }}"
-                  <span class="muted">(confidence {{ "%.0f"|format(g.confidence * 100) }}%)</span>
-                </div>
-              {% endfor %}
-            {% endif %}
+            <div class="outcome-body" hidden>
+              {% if o.mastery_pct is not none %}
+                <p class="muted">{{ o.explanation }}</p>
+              {% else %}
+                <p class="muted">Not yet calculated for this outcome.</p>
+              {% endif %}
+
+              {% if o.gaps %}
+                <p style="margin-bottom:4px;"><strong>Recorded skill gaps</strong> <span class="muted">(reviewed, F4)</span></p>
+                {% for g in o.gaps %}
+                  <div class="gap-item">
+                    <span class="badge {{ g.severity }}">{{ g.severity }}</span>
+                    "{{ g.evidence }}"
+                    <span class="muted">(confidence {{ "%.0f"|format(g.confidence * 100) }}%)</span>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
           </div>
         {% endfor %}
       </div>
@@ -108,5 +117,51 @@
       </div>
     </aside>
   </div>
+
+  <style>
+    .outcome-toggle .chevron { transition: transform .18s ease; color: var(--muted); font-size: 1.1rem; }
+    .outcome-card.open .outcome-toggle .chevron { transform: rotate(90deg); }
+    .outcome-card.open .collapsed-hint { display: none; }
+    .outcome-card.open { box-shadow: var(--shadow-lg); }
+    .priority-row { cursor: pointer; transition: background .15s ease, transform .1s ease; }
+    .priority-row:hover { background: var(--primary-soft); transform: translateX(2px); }
+  </style>
+
+  <script>
+    (function () {
+      function setOpen(card, open) {
+        card.classList.toggle('open', open);
+        var body = card.querySelector('.outcome-body');
+        var head = card.querySelector('.outcome-toggle');
+        if (body) body.hidden = !open;
+        if (head) head.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+      var cards = Array.prototype.slice.call(document.querySelectorAll('.outcome-card'));
+      cards.forEach(function (card) {
+        var head = card.querySelector('.outcome-toggle');
+        function toggle() { setOpen(card, card.querySelector('.outcome-body').hidden); }
+        head.addEventListener('click', toggle);
+        head.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+        });
+      });
+
+      // Clicking a priority topic expands and scrolls to its outcome card.
+      function cardText(card) {
+        var h = card.querySelector('h2');
+        return h ? h.textContent.trim() : '';
+      }
+      document.querySelectorAll('.priority-row').forEach(function (row) {
+        row.addEventListener('click', function () {
+          var text = row.querySelector('.priority-text').textContent.trim();
+          var match = cards.filter(function (c) { return cardText(c) === text; })[0];
+          if (match) {
+            setOpen(match, true);
+            match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        });
+      });
+    })();
+  </script>
 
 {% endblock %}
