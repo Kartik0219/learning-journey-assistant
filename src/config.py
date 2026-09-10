@@ -25,6 +25,7 @@ class Settings:
     historical_dataset_path: str | None
     llm_provider: str | None
     llm_api_key: str | None
+    llm_model: str | None
     app_secret_key: str
     encryption_key: str
     log_level: str
@@ -57,6 +58,9 @@ def get_settings() -> Settings:
         historical_dataset_path=os.getenv("HISTORICAL_DATASET_PATH") or None,
         llm_provider=os.getenv("LLM_PROVIDER") or None,
         llm_api_key=os.getenv("LLM_API_KEY") or None,
+        # Optional model override for the opt-in LLM path (src.model.ai_analysis).
+        # Unset -> that module uses its provider default (e.g. Claude Sonnet).
+        llm_model=os.getenv("LLM_MODEL") or None,
         app_secret_key=os.getenv("APP_SECRET_KEY", "changeme-dev-only"),
         # N3: dev-only fallback so `pytest`/local runs work with zero setup.
         # This is a real, valid Fernet key - fine for local dev, but every

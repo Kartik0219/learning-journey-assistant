@@ -1,0 +1,4 @@
+subject_code,assessment_name,student_number,score,feedback_text
+DEMO101,Assignment 1,DEMO0001,72,Good grasp of core concepts but the applied technique had a minor error in step 2.
+DEMO101,Assignment 1,DEMO0002,58,Core concepts were vague and no trade-offs were discussed.
+DEMO101,Assignment 1,DEMO0003,91,Excellent application and a thoughtful discussion of trade-offs.
