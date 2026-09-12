@@ -202,7 +202,7 @@ environment variable with no caller change.
 
 | `LLM_PROVIDER` | Key from | Default model | Extra install | Cost |
 |---|---|---|---|---|
-| `gemini` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `gemini-2.0-flash` | none — REST via `requests` | free tier |
+| `gemini` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `gemini-flash-latest` | none — REST via `requests` | free tier |
 | `anthropic` | [console.anthropic.com](https://console.anthropic.com) | `claude-sonnet-4-5` | `pip install anthropic` | paid / trial credit |
 
 `gemini` is the recommended default for this project: it needs no extra

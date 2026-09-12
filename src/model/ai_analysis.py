@@ -125,7 +125,7 @@ DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5"
 # Chosen because Google AI Studio serves it on a no-cost tier, which is what
 # makes the LLM path reachable on this project's $0 budget (tender Section 7
 # costs AI/API usage at "Free tier / trial credits (est. $0)").
-DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
+DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
 
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
