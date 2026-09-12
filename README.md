@@ -12,6 +12,16 @@ Valuable academic data currently sits isolated in Moodle, leaving students unsur
 Automatically detects the specific skills behind lost marks. Recommends tailored study strategies. Generates adaptive practice quizzes. Directs learners to targeted revision materials. Provides a private, formative mastery dashboard showing overall mastery percentage and priority focus areas. Includes built-in guardrails to prevent AI hallucinations and protect data privacy.
 ## Roadmap
 Longitudinal tracking across entire degrees. Mapping competencies to employability frameworks. Early-risk analytics for educators. Reflective AI dialogue. Gamified milestones.
+## Documentation
+
+| Document | For |
+|---|---|
+| [User Guide](docs/USER_GUIDE.md) | Students and teaching staff using the app |
+| [System Maintenance](docs/SYSTEM_MAINTENANCE.md) | Architecture, deployment, operations, troubleshooting, known limitations |
+| [Environment Setup](docs/ENVIRONMENT_SETUP.md) | Running it locally for the first time |
+| [Data Dictionary](docs/DATA_DICTIONARY.md) | Field-by-field data definitions |
+| [Tender Document](docs/TENDER_DOCUMENT.md) | Original project proposal |
+
 ## Project Structure
 docs contains project documentation such as the tender document, reports, and diagrams. src contains the application source code. tests contains automated tests.
 ## Subject
