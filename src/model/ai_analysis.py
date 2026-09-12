@@ -28,10 +28,21 @@ caller trusts it.
 
 `.env.example` calls for the provider to be "abstracted behind src/model
 so the provider can be swapped". `analyze_student` dispatches on
-`settings.llm_provider`; only "anthropic" is implemented here, and the
-`anthropic` SDK is imported lazily inside that branch so the package is a
-genuinely optional dependency - the module imports fine (and the whole
-test suite runs) without it installed.
+`settings.llm_provider` across `SUPPORTED_PROVIDERS`:
+
+- **anthropic** - Claude via the `anthropic` SDK, imported lazily inside
+  that branch so the package stays a genuinely optional dependency; the
+  module imports fine (and the whole test suite runs) without it.
+- **gemini** - Google Gemini over its `generateContent` REST endpoint using
+  `requests`, which is already a core dependency. No extra package to
+  install, and Google AI Studio's no-cost tier is what makes the LLM path
+  usable on this project's $0 budget (tender Section 7).
+
+Two providers rather than one is the Section 8 risk-7 mitigation the tender
+committed to - "Abstract the AI provider behind an internal interface where
+practical" - so vendor cost, downtime or policy change cannot remove the
+LLM path. Swapping providers is one environment variable; no caller of
+`analyze_student` changes.
 
 ## Security requirements carried through
 
@@ -109,6 +120,20 @@ Return your response strictly as valid JSON matching this schema:
 # Default Claude model when the provider is Anthropic and LLM_MODEL is unset.
 DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5"
 
+# Default Gemini model when the provider is Gemini and LLM_MODEL is unset.
+# Chosen because Google AI Studio serves it on a no-cost tier, which is what
+# makes the LLM path reachable on this project's $0 budget (tender Section 7
+# costs AI/API usage at "Free tier / trial credits (est. $0)").
+DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
+
+GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+
+# Providers `analyze_student` can dispatch to. Having more than one is the
+# tender's own Section 8 risk-7 mitigation made real ("Abstract the AI
+# provider behind an internal interface where practical"), so no single
+# vendor's pricing, downtime or policy change can remove the LLM path.
+SUPPORTED_PROVIDERS = ("anthropic", "gemini")
+
 LO_STATUSES = ("Mastered", "On Track", "Focus Area")
 
 
@@ -154,7 +179,9 @@ def is_ai_enabled(settings: Settings | None = None) -> bool:
     """Whether a supported LLM provider is configured. Cheap to call; use it
     to decide between this module and the TF-IDF fallback."""
     settings = settings or get_settings()
-    return (settings.llm_provider or "").lower() == "anthropic" and bool(settings.llm_api_key)
+    return (settings.llm_provider or "").lower() in SUPPORTED_PROVIDERS and bool(
+        settings.llm_api_key
+    )
 
 
 def build_analysis_prompt(session: Session, student: Student) -> str:
@@ -241,6 +268,8 @@ def analyze_student(
 
     if provider == "anthropic":
         raw = _call_anthropic(prompt, settings)
+    elif provider == "gemini":
+        raw = _call_gemini(prompt, settings)
     else:  # pragma: no cover - guarded by is_ai_enabled above
         raise AIAnalysisUnavailable(f"Unsupported LLM provider: {provider!r}")
 
@@ -271,6 +300,60 @@ def _call_anthropic(prompt: str, settings: Settings) -> str:
         raise AIAnalysisError(f"Anthropic API call failed: {exc}") from exc
 
     return "".join(block.text for block in message.content if getattr(block, "type", None) == "text")
+
+
+def _call_gemini(prompt: str, settings: Settings) -> str:
+    """Call the Gemini generateContent REST API with SYSTEM_PROMPT as the
+    system instruction.
+
+    Deliberately uses `requests` (already a core dependency for the Moodle
+    client) rather than a Google SDK: it adds no new package to install on
+    the free-tier host, and keeps this provider on the same plain-HTTP
+    footing the rest of the project uses. The key travels in the
+    `x-goog-api-key` header, never in the URL, so it cannot leak into
+    request logs or the audit trail (N3).
+    """
+    import requests
+
+    model = settings.llm_model or DEFAULT_GEMINI_MODEL
+    body = {
+        # Gemini's equivalent of a system turn. Keeping SYSTEM_PROMPT here -
+        # rather than prepending it to the user text - preserves the N5
+        # separation between instructions and untrusted course content.
+        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "maxOutputTokens": 2048,
+            # Ask for raw JSON so the response needs no fence-stripping.
+            # parse_diagnostic_json still validates it either way.
+            "responseMimeType": "application/json",
+        },
+    }
+
+    try:
+        response = requests.post(
+            f"{GEMINI_API_BASE}/{model}:generateContent",
+            headers={
+                "x-goog-api-key": settings.llm_api_key or "",
+                "Content-Type": "application/json",
+            },
+            json=body,
+            timeout=60,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as exc:  # noqa: BLE001 - surface transport/API errors uniformly
+        raise AIAnalysisError(f"Gemini API call failed: {exc}") from exc
+
+    try:
+        parts = payload["candidates"][0]["content"]["parts"]
+    except (KeyError, IndexError, TypeError) as exc:
+        # A blocked or empty candidate lands here (e.g. safety filtering).
+        raise AIAnalysisError(
+            f"Gemini returned no usable candidate content: {payload}"
+        ) from exc
+
+    return "".join(part.get("text", "") for part in parts)
 
 
 def parse_diagnostic_json(raw: str) -> DiagnosticResult:

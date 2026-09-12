@@ -40,6 +40,10 @@ Flask>=3.0,<4.0
 # Imported lazily, so leaving it uninstalled does not break imports or tests.
 # Install it (and set LLM_PROVIDER=anthropic + LLM_API_KEY) to enable Claude.
 # anthropic>=0.39,<1.0
+#
+# The other supported provider, Gemini (LLM_PROVIDER=gemini), needs NO extra
+# package at all - it goes over REST using `requests` above. That is what
+# keeps the LLM path reachable on a $0 budget; see .env.example.
 
 # Testing
 pytest>=8.0,<9.0
