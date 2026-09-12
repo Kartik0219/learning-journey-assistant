@@ -23,6 +23,7 @@ from src.db.models import (
     Student,
     Subject,
 )
+from src.model import ai_analysis
 from src.model.ai_analysis import (
     DEFAULT_GEMINI_MODEL,
     SYSTEM_PROMPT,
@@ -226,6 +227,7 @@ def test_gemini_transport_error_becomes_ai_analysis_error(monkeypatch):
         raise ConnectionError("network down")
 
     monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda _s: None)
 
     with pytest.raises(AIAnalysisError):
         _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="k"))
@@ -262,3 +264,63 @@ def test_analyze_student_dispatches_to_gemini(clean_db, monkeypatch):
 
     assert result.learningOutcomes[0].status == "Focus Area"
     assert "does not alter official grades" in result.disclaimer
+
+
+# --- Transient-failure retry (Gemini free tier returns 503 often) ---------
+
+
+def test_gemini_retries_transient_503_then_succeeds(monkeypatch):
+    """Free-tier Gemini 503s frequently. A single 503 must not surface to the
+    student when a retry would have worked."""
+    import requests
+
+    calls = []
+
+    def flaky_post(*a, **kw):
+        calls.append(1)
+        if len(calls) < 3:
+            return _FakeResponse({}, status=503)
+        return _FakeResponse(_gemini_ok_payload(_VALID_JSON))
+
+    monkeypatch.setattr(requests, "post", flaky_post)
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda _s: None)
+
+    raw = _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="k"))
+    assert parse_diagnostic_json(raw).learningOutcomes[0].code == "SILO1"
+    assert len(calls) == 3
+
+
+def test_gemini_gives_up_after_max_attempts(monkeypatch):
+    import requests
+
+    calls = []
+
+    def always_503(*a, **kw):
+        calls.append(1)
+        return _FakeResponse({}, status=503)
+
+    monkeypatch.setattr(requests, "post", always_503)
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda _s: None)
+
+    with pytest.raises(AIAnalysisError):
+        _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="k"))
+    assert len(calls) == ai_analysis.GEMINI_MAX_ATTEMPTS
+
+
+def test_gemini_does_not_retry_permanent_failure(monkeypatch):
+    """A 403 means a bad/revoked key. Retrying wastes the student's time and
+    cannot succeed - it must fail on the first attempt."""
+    import requests
+
+    calls = []
+
+    def forbidden(*a, **kw):
+        calls.append(1)
+        return _FakeResponse({}, status=403)
+
+    monkeypatch.setattr(requests, "post", forbidden)
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda _s: None)
+
+    with pytest.raises(AIAnalysisError):
+        _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="bad"))
+    assert len(calls) == 1

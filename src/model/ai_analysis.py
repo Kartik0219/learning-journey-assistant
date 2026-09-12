@@ -65,6 +65,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.orm import Session
@@ -127,6 +128,16 @@ DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5"
 DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
 
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+
+# Gemini's free tier returns 503 ("model overloaded") a meaningful share of
+# the time - in testing, five consecutive 503s before a success was normal,
+# so a single-shot call would surface an error to the student on a good
+# proportion of page loads. These retries are for transient server-side
+# statuses ONLY; a 400/401/403 is a real fault (bad key, bad request) and
+# must fail fast rather than be retried.
+GEMINI_RETRY_STATUSES = (429, 500, 502, 503, 504)
+GEMINI_MAX_ATTEMPTS = 5
+GEMINI_BACKOFF_SECONDS = 1.5
 
 # Providers `analyze_student` can dispatch to. Having more than one is the
 # tender's own Section 8 risk-7 mitigation made real ("Abstract the AI
@@ -330,20 +341,39 @@ def _call_gemini(prompt: str, settings: Settings) -> str:
         },
     }
 
-    try:
-        response = requests.post(
-            f"{GEMINI_API_BASE}/{model}:generateContent",
-            headers={
-                "x-goog-api-key": settings.llm_api_key or "",
-                "Content-Type": "application/json",
-            },
-            json=body,
-            timeout=60,
-        )
-        response.raise_for_status()
-        payload = response.json()
-    except Exception as exc:  # noqa: BLE001 - surface transport/API errors uniformly
-        raise AIAnalysisError(f"Gemini API call failed: {exc}") from exc
+    url = f"{GEMINI_API_BASE}/{model}:generateContent"
+    headers = {
+        "x-goog-api-key": settings.llm_api_key or "",
+        "Content-Type": "application/json",
+    }
+
+    last_error: Exception | None = None
+    for attempt in range(1, GEMINI_MAX_ATTEMPTS + 1):
+        try:
+            response = requests.post(url, headers=headers, json=body, timeout=60)
+        except Exception as exc:  # noqa: BLE001 - transport failure
+            last_error = exc
+        else:
+            if response.status_code not in GEMINI_RETRY_STATUSES:
+                # Success, or a permanent fault (bad key, malformed request)
+                # that retrying cannot fix - let raise_for_status decide.
+                try:
+                    response.raise_for_status()
+                    payload = response.json()
+                except Exception as exc:  # noqa: BLE001
+                    raise AIAnalysisError(f"Gemini API call failed: {exc}") from exc
+                break
+            last_error = RuntimeError(
+                f"HTTP {response.status_code} from Gemini (transient)"
+            )
+
+        if attempt < GEMINI_MAX_ATTEMPTS:
+            # Exponential backoff: 1.5s, 3s, 6s, 12s.
+            time.sleep(GEMINI_BACKOFF_SECONDS * (2 ** (attempt - 1)))
+    else:
+        raise AIAnalysisError(
+            f"Gemini API call failed after {GEMINI_MAX_ATTEMPTS} attempts: {last_error}"
+        ) from last_error
 
     try:
         parts = payload["candidates"][0]["content"]["parts"]
