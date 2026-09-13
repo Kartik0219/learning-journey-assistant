@@ -91,6 +91,82 @@ def test_mastery_score_is_clipped_to_zero_and_one(seeded_db):
         assert mastery.score == 0.0
 
 
+# --- Real-dataset path (IOG-33): results carry explicit SILO tags ---
+#
+# Reuses the sample DEMO subject (SILO1-3) with silo_tags_text set by hand,
+# the same approach as test_model_silo_mapping.py - the real xlsx is
+# gitignored and never available to the test suite.
+
+
+def _tag_result(session, student: Student, silo_tags_text: str, score: float) -> AssessmentResult:
+    result = session.query(AssessmentResult).filter_by(student_id=student.id).first()
+    result.silo_tags_text = silo_tags_text
+    result.score = score
+    session.flush()
+    return result
+
+
+def _add_tagged_result(session, student: Student, silo_tags_text: str, score: float) -> AssessmentResult:
+    """A second result in the same subject - the real dataset has 11
+    assessments per subject, the sample dataset only one."""
+    existing = session.query(AssessmentResult).filter_by(student_id=student.id).first()
+    result = AssessmentResult(
+        assessment_id=existing.assessment_id,
+        student_id=student.id,
+        score=score,
+        silo_tags_text=silo_tags_text,
+    )
+    session.add(result)
+    session.flush()
+    return result
+
+
+def test_tagged_gap_is_not_penalised_twice(seeded_db):
+    """A 51% result tagged SILO2 already sets SILO2's baseline to 51%. Its
+    gap's severity comes from that same score, so subtracting it again
+    drove real students at ~50% to 0% mastery. The gap must still appear
+    in the explanation as evidence."""
+    with get_session() as session:
+        student = _student(session, "DEMO0001")
+        _tag_result(session, student, "SILO2: Apply demo techniques", score=51.0)
+        _run_model_stage(session)
+        silo2 = session.query(LearningOutcome).filter_by(code="SILO2").one()
+
+        mastery = calculate_mastery_score(session, student, silo2)
+
+        assert mastery.score == 0.51
+        assert "SILO2: Apply demo techniques" in mastery.explanation_text
+        assert "already reflected in the baseline" in mastery.explanation_text
+
+
+def test_tagged_baseline_uses_only_results_tagged_with_that_outcome(seeded_db):
+    with get_session() as session:
+        student = _student(session, "DEMO0001")
+        _tag_result(session, student, "SILO2: Apply demo techniques", score=51.0)
+        _add_tagged_result(session, student, "SILO1: Explain core concepts", score=90.0)
+        _run_model_stage(session)
+        outcomes = {lo.code: lo for lo in session.query(LearningOutcome).all()}
+
+        assert calculate_mastery_score(session, student, outcomes["SILO2"]).score == 0.51
+        silo1 = calculate_mastery_score(session, student, outcomes["SILO1"])
+        assert silo1.score == 0.90
+        assert "tagged with SILO1" in silo1.explanation_text
+
+
+def test_outcome_with_no_tagged_results_falls_back_to_the_subject_average(seeded_db):
+    with get_session() as session:
+        student = _student(session, "DEMO0001")
+        _tag_result(session, student, "SILO2: Apply demo techniques", score=51.0)
+        _add_tagged_result(session, student, "SILO1: Explain core concepts", score=90.0)
+        _run_model_stage(session)
+        silo3 = session.query(LearningOutcome).filter_by(code="SILO3").one()
+
+        mastery = calculate_mastery_score(session, student, silo3)
+
+        assert mastery.score == 0.705
+        assert "in this subject" in mastery.explanation_text
+
+
 def test_recommend_study_method_follows_the_fixed_table(seeded_db):
     """F7: no model chooses this - it's a pure lookup keyed by the
     outcome's gap type, and every entry in STUDY_METHOD_TABLE should be
