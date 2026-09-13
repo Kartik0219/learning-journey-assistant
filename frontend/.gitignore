@@ -8,7 +8,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist/ IS committed: the Render Python runtime has no Node, so Flask serves
+# this pre-built bundle at /app/. Rebuild (`npm run build`) and commit it
+# whenever frontend/src changes - tests/test_spa_bundle.py checks it's intact.
 dist-ssr
 *.local
 

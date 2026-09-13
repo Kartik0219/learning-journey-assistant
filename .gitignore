@@ -6,6 +6,8 @@ __pycache__/
 .eggs/
 build/
 dist/
+# ...except the React SPA's pre-built bundle, served by Flask at /app/.
+!frontend/dist/
 
 # --- Virtual environments ---
 .venv/
