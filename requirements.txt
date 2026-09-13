@@ -22,8 +22,10 @@ openpyxl>=3.1,<4.0
 # Moodle Web Services calls (read-only - F1)
 requests>=2.31,<3.0
 
-# Encryption at rest for student PII (N3 - IOG-42)
-cryptography>=42.0,<43.0
+# Encryption at rest for student PII (N3 - IOG-42). >=50 because 42.x-49.x
+# carry published advisories (pip-audit, Sep 2026: PYSEC-2026-1284/2141/35/
+# 3552/3553/3554, GHSA-h4gh-qq45-vh27, GHSA-537c-gmf6-5ccf).
+cryptography>=50.0,<51.0
 
 # Local, explainable "AI technique" for skill-gap extraction and SILO/
 # resource-passage similarity (F3-F5, F9) - TF-IDF cosine similarity,
@@ -45,9 +47,9 @@ Flask>=3.0,<4.0
 # package at all - it goes over REST using `requests` above. That is what
 # keeps the LLM path reachable on a $0 budget; see .env.example.
 
-# Testing
-pytest>=8.0,<9.0
-pytest-cov>=5.0,<6.0
+# Testing (pytest >=9.0.3 fixes PYSEC-2026-1845)
+pytest>=9.0.3,<10.0
+pytest-cov>=6.0,<8.0
 
 # Lint / format (optional but recommended - keeps a shared codebase
 # consistent across 5 people)
@@ -55,4 +57,5 @@ ruff>=0.4,<1.0
 
 # Production WSGI server for deployment (Render/Railway/etc.) - dev uses
 # Flask's built-in server (see src/deliver/app.py), never gunicorn.
-gunicorn>=21.2,<22.0
+# >=23 because 21.x has HTTP request-smuggling advisories (PYSEC-2026-1433/1434).
+gunicorn>=23.0,<24.0
