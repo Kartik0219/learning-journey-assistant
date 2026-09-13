@@ -41,6 +41,20 @@ class Settings:
         return bool(self.moodle_base_url and self.moodle_ws_token)
 
 
+# The approved 150-student workbook, committed to the repo (data/dataset/).
+APPROVED_DATASET = "data/dataset/CSE_results_150_students_3_Subjects.xlsx"
+
+
+def _render_default_dataset() -> str | None:
+    """On Render (which always sets RENDER=true) use the approved workbook when
+    HISTORICAL_DATASET_PATH isn't set. Render only applies render.yaml env vars
+    when a service is first created, so the live demo can't rely on them.
+    Local runs and tests (no RENDER variable) keep the sample-data fallback."""
+    if os.getenv("RENDER") and os.path.exists(APPROVED_DATASET):
+        return APPROVED_DATASET
+    return None
+
+
 def get_settings() -> Settings:
     """Build a Settings object from the current environment.
 
@@ -55,7 +69,7 @@ def get_settings() -> Settings:
         # gitignored - never commit real student records). Unset in CI/a
         # fresh clone, so src.parse.cleaners falls back to the synthetic
         # data/sample/ CSVs automatically - same fallback pattern as Moodle.
-        historical_dataset_path=os.getenv("HISTORICAL_DATASET_PATH") or None,
+        historical_dataset_path=os.getenv("HISTORICAL_DATASET_PATH") or _render_default_dataset(),
         llm_provider=os.getenv("LLM_PROVIDER") or None,
         llm_api_key=os.getenv("LLM_API_KEY") or None,
         # Optional model override for the opt-in LLM path (src.model.ai_analysis).
