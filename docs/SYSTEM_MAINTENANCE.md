@@ -90,6 +90,10 @@ or .xlsx│  connect   │    when no credentials / dataset set)
 | `/review` | GET | Staff / Admin only (N6) | F4 review queue: the low-confidence gaps held back from students |
 | `/review/<gap_id>` | POST | Staff / Admin only (N6) | Record an approve/reject decision, optionally correcting the SILO link (F5) |
 | `/practice/<recommendation_id>` | POST | Student | Marks a recommendation as practised (engagement, F11) |
+| `/app/…` | GET | Public shell; data needs sign-in | The React SPA (`frontend/dist`); unknown paths fall back to `index.html` |
+| `/api/session` | GET | Signed-in (401 otherwise) | Role, and the students this user may view (a student gets only themself) |
+| `/api/students/<id>/dashboard` · `/results` · `/resources` | GET | Signed-in † | JSON for the SPA — same `require_student_access` + consent checks as the pages |
+| `/api/recommendations/<id>/practice` | POST (JSON only) | Owner student † | SPA "Mark as practised"; JSON-only so a cross-site form cannot trigger it |
 
 † A student sees only their own record. Staff/Admin may view a selected
 student's page via the staff switcher (`_staff_switcher.html`); the check
@@ -137,7 +141,13 @@ fresh clone, CI and the demo deploy all run with zero configuration.
 Defined as infrastructure-as-code in `render.yaml`.
 
 - **Service:** `learning-journey-assistant-demo`, Python, **free plan**.
-- **Build:** `pip install -r requirements.txt`
+- **Build:** `pip install -r requirements.txt`, then `npm ci && npm run build`
+  in `frontend/` for the SPA. The Node step is allowed to fail without
+  failing the deploy — `/app/` then reports "not built" and the Flask
+  pages are unaffected.
+- **Local SPA development:** run the Flask app on `:5000`, then
+  `npm run dev` in `frontend/`; Vite proxies `/api`, `/login` and
+  `/logout` so the session cookie stays same-origin.
 - **Start:** `python -m src.pipeline && gunicorn 'src.deliver.app:create_app()' --bind 0.0.0.0:$PORT --workers 2 --timeout 120`
 - **Auto-deploys from `main`.** Live URL:
   <https://learning-journey-assistant.onrender.com>
@@ -341,11 +351,11 @@ Carried openly rather than hidden — each is flagged on its Jira ticket.
    SILO/rubric match is therefore text-based, not a SQL join. Populating
    this FK is the single highest-value correctness improvement left, but
    it needs a confirmed mapping rule — do not guess at it.
-3. **The React SPA (`frontend/`) is not connected to the backend.** It
-   runs entirely on mock TypeScript fixtures in `frontend/src/data/`;
-   there is no API client. The Flask app is the working product. Either
-   wire the SPA to a JSON API or formally designate it a prototype — an
-   open team decision.
+3. **Two front ends over one backend.** The server-rendered Flask pages
+   are the complete product (they include the staff pages). The React SPA
+   at `/app/` covers the three student views — dashboard, results, study
+   plan — over the JSON API in `src/deliver/spa_api.py`. It has no
+   staff/review screens; staff use the Flask pages.
 4. **Demo-scope account management** — see §7.2.
 5. **Free-tier deployment** — cold starts, ephemeral storage (§4.1).
 6. **Moodle integration is untested against a live instance** — the HTTP

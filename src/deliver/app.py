@@ -36,7 +36,18 @@ a new data model, apart from Resources' own `get_student_resources`.
 
 from __future__ import annotations
 
-from flask import Flask, abort, redirect, render_template, request, session, url_for
+from pathlib import Path
+
+from flask import (
+    Flask,
+    abort,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+    url_for,
+)
 
 from src.config import get_settings
 from src.db.database import get_session
@@ -45,6 +56,7 @@ from src.deliver.ai_insight_api import get_ai_insight
 from src.deliver.coordinator_api import get_coordinator_report
 from src.deliver.dashboard_api import get_student_dashboard, get_student_resources
 from src.deliver.review_api import ReviewError, get_review_queue, review_gap
+from src.deliver.spa_api import api as spa_api
 from src.estimate.mastery import record_engagement
 from src.security.audit import log_event
 from src.security.authentication import (
@@ -55,9 +67,36 @@ from src.security.authentication import (
 from src.security.authorization import Actor, AuthorizationError, Role
 from src.security.consent import ConsentError
 
+# The React SPA's production build (`npm run build` in frontend/). Absent
+# in a fresh clone or if the Node build step was skipped - /app then says so
+# instead of erroring, and the server-rendered app is unaffected.
+SPA_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
+
+def _safe_next(target: str | None) -> str | None:
+    """Only same-site SPA paths are valid post-login destinations - never an
+    absolute or protocol-relative URL (open-redirect guard)."""
+    if target and target.startswith("/app") and not target.startswith("//"):
+        return target
+    return None
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = get_settings().app_secret_key
+    app.register_blueprint(spa_api)
+
+    @app.route("/app/", defaults={"path": ""})
+    @app.route("/app/<path:path>")
+    def spa(path: str):
+        """Serve the React SPA; unknown paths fall back to index.html so
+        client-side routes (/app/results, /app/study-plan) survive a reload."""
+        if not (SPA_DIST / "index.html").exists():
+            message = "The React app has not been built: run `npm ci && npm run build` in frontend/"
+            return (message, 404)
+        if path and (SPA_DIST / path).is_file():
+            return send_from_directory(SPA_DIST, path)
+        return send_from_directory(SPA_DIST, "index.html")
 
     def _resolve_actor_and_target(db_session):
         """Shared by every tab route: who's asking, and which student are
@@ -132,7 +171,7 @@ def create_app() -> Flask:
 
         session["role"] = identity.role.value
         session["student_id"] = identity.student_id
-        return redirect(url_for("dashboard"))
+        return redirect(_safe_next(request.args.get("next")) or url_for("dashboard"))
 
     @app.route("/logout")
     def logout():
