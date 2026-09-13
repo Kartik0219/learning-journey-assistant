@@ -153,6 +153,25 @@ def test_tagged_baseline_uses_only_results_tagged_with_that_outcome(seeded_db):
         assert "tagged with SILO1" in silo1.explanation_text
 
 
+def test_tagged_baseline_is_weighted_by_assessment_weight(seeded_db):
+    """Real workbook: a 54 on a 15% test and a 50 on a 40% exam give
+    (54*0.15 + 50*0.40) / 0.55 = 51.09%, not the plain mean of 52%."""
+    with get_session() as session:
+        student = _student(session, "DEMO0001")
+        test = _tag_result(session, student, "SILO2: Apply demo techniques", score=54.0)
+        test.weight = 0.15
+        exam = _add_tagged_result(session, student, "SILO2: Apply demo techniques", score=50.0)
+        exam.weight = 0.40
+        session.flush()
+        _run_model_stage(session)
+        silo2 = session.query(LearningOutcome).filter_by(code="SILO2").one()
+
+        mastery = calculate_mastery_score(session, student, silo2)
+
+        assert mastery.score == round((54 * 0.15 + 50 * 0.40) / 0.55 / 100, 4)
+        assert "weighted by each assessment's weight" in mastery.explanation_text
+
+
 def test_outcome_with_no_tagged_results_falls_back_to_the_subject_average(seeded_db):
     with get_session() as session:
         student = _student(session, "DEMO0001")

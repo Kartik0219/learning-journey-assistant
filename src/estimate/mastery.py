@@ -114,7 +114,15 @@ def calculate_mastery_score(
     that reproducibility is the F6 requirement, not an afterthought.
     """
     results = _relevant_results(student, learning_outcome)
-    base_score = (sum(r.score for r in results) / len(results) / 100.0) if results else 0.0
+    # Weighted by each assessment's share of the subject total when the
+    # dataset supplies weights (the real workbook), so a 40% exam counts
+    # more than a 15% test. Plain mean otherwise (the sample CSVs).
+    weighted = bool(results) and all(r.weight for r in results)
+    if weighted:
+        total_weight = sum(r.weight for r in results)
+        base_score = sum(r.score * r.weight for r in results) / total_weight / 100.0
+    else:
+        base_score = (sum(r.score for r in results) / len(results) / 100.0) if results else 0.0
     tagged = any(learning_outcome.code in _tagged_codes(r) for r in results)
 
     gaps = _gaps_for(student, learning_outcome)
@@ -129,9 +137,10 @@ def calculate_mastery_score(
     score = max(0.0, min(1.0, base_score - gap_penalty + bonus))
 
     scope = f"tagged with {learning_outcome.code}" if tagged else "in this subject"
+    method = ", weighted by each assessment's weight" if weighted else ""
     explanation_parts = [
         f"Assessment score baseline: {base_score * 100:.0f}% across "
-        f"{len(results)} result(s) {scope}."
+        f"{len(results)} result(s) {scope}{method}."
     ]
     if penalised:
         gap_lines = "; ".join(
