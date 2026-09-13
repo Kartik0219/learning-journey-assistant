@@ -32,6 +32,8 @@ def workbook(tmp_path, monkeypatch):
                 "Score (1-100)": 45.0,
                 "Feedback Comment": "Assessment marked according to rubric.",
                 "SILO's": "SILO1: Explain core concepts; SILO2: Apply techniques",
+                "Weight": 0.4,
+                "Weighted Score": 18.0,
             },
             {
                 "Student ID": "STU0001",
@@ -124,6 +126,21 @@ def test_load_assessment_results_carries_silo_tags_and_derives_subject_code(work
     ].iloc[0]
     assert first["score"] == 45.0
     assert first["silo_tags_text"] == "SILO1: Explain core concepts; SILO2: Apply techniques"
+
+
+def test_load_assessment_results_carries_weight_and_weighted_score(workbook):
+    """Shown verbatim on the student's Results page. Rows without the
+    columns filled in come through as NaN, which Parse drops to None."""
+    results = excel_loader.load_assessment_results()
+    first = results[
+        (results["student_number"] == "STU0001")
+        & (results["assessment_name"] == "CSE1TEST - Assignment 1")
+    ].iloc[0]
+    assert first["weight"] == 0.4
+    assert first["weighted_score"] == 18.0
+
+    unweighted = results[results["student_number"] == "STU0002"].iloc[0]
+    assert pd.isna(unweighted["weight"])
 
 
 def test_load_topic_materials_returns_empty_correctly_shaped_frame(workbook):

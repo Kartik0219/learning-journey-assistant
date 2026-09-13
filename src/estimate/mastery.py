@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from src.connect.excel_loader import parse_silo_tags
 from src.db.models import (
     AssessmentResult,
     LearningOutcome,
@@ -69,17 +70,26 @@ _METHOD_FRAMING: dict[str, str] = {
 }
 
 
+def _tagged_codes(result: AssessmentResult) -> set[str]:
+    return {code for code, _ in parse_silo_tags(result.silo_tags_text or "")}
+
+
 def _relevant_results(
     student: Student, learning_outcome: LearningOutcome
 ) -> list[AssessmentResult]:
-    """A student's assessment results within the same subject as the
-    learning outcome being scored. The sample dataset has one assessment
-    per subject; a larger dataset would narrow this further by which
-    rubric criteria the assessment's rubric actually covers."""
-    return [
+    """A student's scored results in the learning outcome's subject,
+    narrowed to the results explicitly tagged with this outcome when the
+    dataset has SILO tags (the real dataset: 11 assessments per subject,
+    each covering only some SILOs). Without that narrowing every outcome in
+    a subject got the same subject-wide average. Falls back to every result
+    in the subject when nothing is tagged with this outcome (the sample
+    dataset, which has no tags at all)."""
+    in_subject = [
         r for r in student.results
         if r.assessment.subject_id == learning_outcome.subject_id and r.score is not None
     ]
+    tagged = [r for r in in_subject if learning_outcome.code in _tagged_codes(r)]
+    return tagged or in_subject
 
 
 def _gaps_for(student: Student, learning_outcome: LearningOutcome) -> list[SkillGap]:
@@ -105,28 +115,41 @@ def calculate_mastery_score(
     """
     results = _relevant_results(student, learning_outcome)
     base_score = (sum(r.score for r in results) / len(results) / 100.0) if results else 0.0
+    tagged = any(learning_outcome.code in _tagged_codes(r) for r in results)
 
     gaps = _gaps_for(student, learning_outcome)
-    gap_penalty = sum(SEVERITY_WEIGHT[g.severity] * g.confidence for g in gaps)
+    # A SILO-tag gap's severity is derived from the very score already in
+    # the baseline, so only gaps inferred from feedback text are penalised.
+    penalised = [g for g in gaps if not g.assessment_result.silo_tags_text]
+    evidence_only = [g for g in gaps if g.assessment_result.silo_tags_text]
+    gap_penalty = sum(SEVERITY_WEIGHT[g.severity] * g.confidence for g in penalised)
 
     bonus = _engagement_bonus(session, student, learning_outcome)
 
     score = max(0.0, min(1.0, base_score - gap_penalty + bonus))
 
+    scope = f"tagged with {learning_outcome.code}" if tagged else "in this subject"
     explanation_parts = [
         f"Assessment score baseline: {base_score * 100:.0f}% across "
-        f"{len(results)} result(s) in this subject."
+        f"{len(results)} result(s) {scope}."
     ]
-    if gaps:
+    if penalised:
         gap_lines = "; ".join(
             f"'{g.source_evidence_text}' ({g.severity} severity, "
             f"confidence {g.confidence:.2f})"
-            for g in gaps
+            for g in penalised
         )
         explanation_parts.append(
-            f"Reduced by {len(gaps)} recorded skill gap(s) mapped to this outcome: {gap_lines}."
+            f"Reduced by {len(penalised)} recorded skill gap(s) mapped to this outcome: {gap_lines}."
         )
-    else:
+    if evidence_only:
+        explanation_parts.append(
+            f"{len(evidence_only)} below-mastery result(s) tagged with this outcome, "
+            f"already reflected in the baseline: "
+            + "; ".join(f"'{g.source_evidence_text}' ({g.severity} severity)" for g in evidence_only)
+            + "."
+        )
+    if not gaps:
         explanation_parts.append("No reviewed skill gaps are currently mapped to this outcome.")
     if bonus > 0:
         explanation_parts.append(
