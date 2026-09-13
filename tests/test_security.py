@@ -110,10 +110,10 @@ def test_record_consent_allows_processing_and_writes_audit_log(clean_db):
         assert events[0].actor == "consented1"
 
 
-def test_require_student_access_allows_self_and_staff(clean_db):
+def test_require_student_access_allows_self_only(clean_db):
     require_student_access(Actor(role=Role.STUDENT, student_id=1), target_student_id=1)
-    require_student_access(Actor(role=Role.STAFF), target_student_id=1)
-    require_student_access(Actor(role=Role.ADMIN), target_student_id=1)
+    with pytest.raises(AuthorizationError):
+        require_student_access(Actor(role=Role.STUDENT, student_id=None), target_student_id=1)
 
 
 def test_require_student_access_blocks_cross_student_access(clean_db):

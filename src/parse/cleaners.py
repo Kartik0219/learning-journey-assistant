@@ -44,8 +44,7 @@ from src.parse.schema_validation import (
     TopicMaterialRecord,
 )
 from src.security.audit import log_event
-from src.security.authentication import set_staff_password, set_student_password
-from src.security.authorization import Role
+from src.security.authentication import set_student_password
 from src.security.consent import record_consent
 from src.security.encryption import blind_index
 
@@ -249,17 +248,15 @@ def seed_demo_consent(session: Session, students: list[Student]) -> int:
 
 def seed_demo_credentials(session: Session, students: list[Student]) -> int:
     """App-build phase (N1): seed a real, hashed sign-in credential for
-    every student that doesn't already have one, plus one fixed Staff and
-    one fixed Admin demo account.
+    every student that doesn't already have one. The app is student-only,
+    so no Staff or Admin accounts are created.
 
     The demo password for a student is their own student number (e.g.
     student DEMO0001 signs in with student number "DEMO0001" and password
     "DEMO0001") - fixed and documented (see docs/ENVIRONMENT_SETUP.md),
     the same demonstration-scope disclosure the old picker-based login
     already made, not a claim of production-grade credential management.
-    Staff/Admin demo credentials are "staff"/"staff123" and
-    "admin"/"admin123" respectively. Idempotent like seed_demo_consent -
-    safe to call on every pipeline run.
+    Idempotent like seed_demo_consent - safe to call on every pipeline run.
     """
     seeded = 0
     for student in students:
@@ -269,13 +266,6 @@ def seed_demo_credentials(session: Session, students: list[Student]) -> int:
         if already_has_credential:
             continue
         set_student_password(session, student, student.student_number)
-        seeded += 1
-
-    if not session.query(UserCredential).filter_by(username="staff").one_or_none():
-        set_staff_password(session, "staff", Role.STAFF, "staff123")
-        seeded += 1
-    if not session.query(UserCredential).filter_by(username="admin").one_or_none():
-        set_staff_password(session, "admin", Role.ADMIN, "admin123")
         seeded += 1
 
     return seeded

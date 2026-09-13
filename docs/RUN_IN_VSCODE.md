@@ -115,11 +115,12 @@ Leave this terminal running, then open **http://127.0.0.1:5000** in your browser
 
 **Sign in with:**
 
-| Role | Username / student number | Password |
-|---|---|---|
-| Student | `DEMO0001` | `DEMO0001` |
-| Staff | `staff` | `staff123` |
-| Admin | `admin` | `admin123` |
+| Student number | Password |
+|---|---|
+| `DEMO0001` | `DEMO0001` |
+
+The app is student-only — there are no staff or admin accounts. On the
+150-student dataset, sign in as `STU0001` / `STU0001` instead (see step 6).
 
 To stop the app, click in the terminal and press `Ctrl+C`.
 

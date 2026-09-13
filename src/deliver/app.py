@@ -4,8 +4,9 @@ Run it with:
 
     python -m src.deliver.app
 
-then open http://127.0.0.1:5000/ - pick a demo student (or Staff/Admin)
-on the login screen.
+then open http://127.0.0.1:5000/ and sign in with a student number (the
+password is the student number too, e.g. STU0001 / STU0001). The app is
+student-only: there are no staff or admin accounts.
 
 ## Login is real, but demonstration-scoped
 
@@ -53,21 +54,15 @@ from src.config import get_settings
 from src.db.database import get_session
 from src.db.models import Student
 from src.deliver.ai_insight_api import get_ai_insight
-from src.deliver.coordinator_api import get_coordinator_report
 from src.deliver.dashboard_api import (
     get_student_dashboard,
     get_student_resources,
     get_student_results,
 )
-from src.deliver.review_api import ReviewError, get_review_queue, review_gap
 from src.deliver.spa_api import api as spa_api
 from src.estimate.mastery import record_engagement
 from src.security.audit import log_event
-from src.security.authentication import (
-    AuthenticationError,
-    authenticate_staff,
-    authenticate_student,
-)
+from src.security.authentication import AuthenticationError, authenticate_student
 from src.security.authorization import Actor, AuthorizationError, Role
 from src.security.consent import ConsentError
 
@@ -90,6 +85,13 @@ def create_app() -> Flask:
     app.config["SECRET_KEY"] = get_settings().app_secret_key
     app.register_blueprint(spa_api)
 
+    @app.before_request
+    def _drop_retired_roles():
+        """Staff and Admin were removed; a browser still holding one of those
+        old session cookies is simply signed out rather than erroring."""
+        if session.get("role") not in (None, Role.STUDENT.value):
+            session.clear()
+
     @app.route("/app/", defaults={"path": ""})
     @app.route("/app/<path:path>")
     def spa(path: str):
@@ -103,27 +105,12 @@ def create_app() -> Flask:
         return send_from_directory(SPA_DIST, "index.html")
 
     def _resolve_actor_and_target(db_session):
-        """Shared by every tab route: who's asking, and which student are
-        they looking at. A Student only ever sees themself (N6); Staff/
-        Admin can switch students via `?student_id=`, and that choice is
-        remembered in the session so it survives navigating between tabs
-        without threading a query string through every nav link."""
-        actor = Actor(role=Role(session["role"]), student_id=session.get("student_id"))
-        students = [
-            {"id": s.id, "label": s.display_name}
-            for s in db_session.query(Student).order_by(Student.id).all()
-        ]
-        if actor.role == Role.STUDENT:
-            return actor, students, actor.student_id
-
-        requested = request.args.get("student_id", type=int)
-        target_student_id = requested if requested is not None else session.get("viewed_student_id")
-        if target_student_id is None:
-            if not students:
-                abort(404)
-            target_student_id = students[0]["id"]
-        session["viewed_student_id"] = target_student_id
-        return actor, students, target_student_id
+        """Shared by every tab route: the signed-in student, who only ever
+        sees their own records (N6)."""
+        actor = Actor(role=Role.STUDENT, student_id=session.get("student_id"))
+        student = db_session.get(Student, actor.student_id)
+        students = [{"id": student.id, "label": student.display_name}] if student else []
+        return actor, students, actor.student_id
 
     @app.route("/")
     def index():
@@ -136,41 +123,23 @@ def create_app() -> Flask:
         if request.method == "GET":
             return render_template("login.html", error=None)
 
-        role = request.form.get("role", "")
+        student_number = request.form.get("student_number", "").strip()
         password = request.form.get("password", "")
+        if not student_number or not password:
+            return render_template("login.html", error="Enter your student number and password.")
 
         with get_session() as db_session:
             try:
-                if role == Role.STUDENT.value:
-                    student_number = request.form.get("student_number", "")
-                    if not student_number or not password:
-                        return render_template(
-                            "login.html", error="Enter your student number and password."
-                        )
-                    identity = authenticate_student(db_session, student_number, password)
-                    # N4: sign-in is a named example event in AuditLogEntry's
-                    # own docstring - log by the identifier actually
-                    # submitted, since the encrypted student_number can't be
-                    # queried back out of identity.student_id cheaply here.
-                    log_event(db_session, actor=student_number, action="sign_in")
-                elif role in (Role.STAFF.value, Role.ADMIN.value):
-                    username = request.form.get("username", "")
-                    if not username or not password:
-                        return render_template(
-                            "login.html", error="Enter your username and password."
-                        )
-                    identity = authenticate_staff(db_session, username, password)
-                    log_event(db_session, actor=username, action="sign_in")
-                else:
-                    return render_template("login.html", error="Pick a role.")
+                identity = authenticate_student(db_session, student_number, password)
+                # N4: sign-in is a named example event in AuditLogEntry's
+                # own docstring - log by the identifier actually submitted,
+                # since the encrypted student_number can't be queried back
+                # out of identity.student_id cheaply here.
+                log_event(db_session, actor=student_number, action="sign_in")
             except AuthenticationError as exc:
-                # N4: failed attempts are worth an audit trail too, but
-                # never at the cost of confirming *which* field was wrong -
-                # AuthenticationError's message already avoids that.
-                failed_actor = (
-                    request.form.get("student_number") or request.form.get("username") or "unknown"
-                )
-                log_event(db_session, actor=failed_actor, action="sign_in_failed")
+                # N4: failed attempts are audited too, without confirming
+                # *which* field was wrong.
+                log_event(db_session, actor=student_number, action="sign_in_failed")
                 return render_template("login.html", error=str(exc))
 
         session["role"] = identity.role.value
@@ -202,7 +171,6 @@ def create_app() -> Flask:
                 "dashboard.html",
                 data=data,
                 actor_role=actor.role.value,
-                is_staff=actor.role != Role.STUDENT,
                 students=students,
                 current_student_id=target_student_id,
             )
@@ -231,7 +199,6 @@ def create_app() -> Flask:
                 "plan.html",
                 data=data,
                 actor_role=actor.role.value,
-                is_staff=actor.role != Role.STUDENT,
                 students=students,
                 current_student_id=target_student_id,
             )
@@ -259,7 +226,6 @@ def create_app() -> Flask:
                 "quizzes.html",
                 data=data,
                 actor_role=actor.role.value,
-                is_staff=actor.role != Role.STUDENT,
                 students=students,
                 current_student_id=target_student_id,
             )
@@ -287,7 +253,6 @@ def create_app() -> Flask:
                 "results.html",
                 data=data,
                 actor_role=actor.role.value,
-                is_staff=actor.role != Role.STUDENT,
                 students=students,
                 current_student_id=target_student_id,
             )
@@ -316,7 +281,6 @@ def create_app() -> Flask:
                 "resources.html",
                 data=data,
                 actor_role=actor.role.value,
-                is_staff=actor.role != Role.STUDENT,
                 students=students,
                 current_student_id=target_student_id,
             )
@@ -345,82 +309,16 @@ def create_app() -> Flask:
                 "ai_insight.html",
                 data=data,
                 actor_role=actor.role.value,
-                is_staff=actor.role != Role.STUDENT,
                 students=students,
                 current_student_id=target_student_id,
             )
-
-    @app.route("/coordinator")
-    def coordinator():
-        """App-build phase database feature (Staff/Admin only, N6): the
-        cohort-level counterpart to /dashboard - see
-        src.deliver.coordinator_api.get_coordinator_report."""
-        if "role" not in session:
-            return redirect(url_for("login"))
-
-        actor = Actor(role=Role(session["role"]), student_id=session.get("student_id"))
-
-        with get_session() as db_session:
-            try:
-                report = get_coordinator_report(db_session, actor)
-            except AuthorizationError:
-                abort(403)
-
-            return render_template("coordinator.html", report=report, actor_role=actor.role.value)
-
-    @app.route("/review")
-    def review_queue():
-        """F4: the queue of low-confidence skill gaps held back from
-        students until a human checks them. Staff/Admin only (N6) - see
-        src.deliver.review_api."""
-        if "role" not in session:
-            return redirect(url_for("login"))
-
-        actor = Actor(role=Role(session["role"]), student_id=session.get("student_id"))
-
-        with get_session() as db_session:
-            try:
-                queue = get_review_queue(db_session, actor)
-            except AuthorizationError:
-                abort(403)
-
-            return render_template(
-                "review.html",
-                queue=queue,
-                actor_role=actor.role.value,
-                notice=request.args.get("notice"),
-            )
-
-    @app.route("/review/<int:gap_id>", methods=["POST"])
-    def review_decision(gap_id: int):
-        """F4/F5: record one approve/reject decision, optionally correcting
-        the gap's SILO link on the way through. The gap id comes from the
-        URL but authorisation is re-checked server-side inside review_gap -
-        a Student posting here directly gets 403, not a decision (N6)."""
-        if "role" not in session:
-            return redirect(url_for("login"))
-
-        actor = Actor(role=Role(session["role"]), student_id=session.get("student_id"))
-        decision = request.form.get("decision", "")
-        outcome_id = request.form.get("learning_outcome_id", type=int)
-
-        with get_session() as db_session:
-            try:
-                review_gap(db_session, actor, gap_id, decision, outcome_id)
-            except AuthorizationError:
-                abort(403)
-            except ReviewError:
-                abort(400)
-
-        verb = "approved" if decision == "approve" else "rejected"
-        return redirect(url_for("review_queue", notice=f"Gap #{gap_id} {verb}."))
 
     @app.route("/practice/<int:recommendation_id>", methods=["POST"])
     def practice(recommendation_id: int):
         if "role" not in session:
             return redirect(url_for("login"))
 
-        actor = Actor(role=Role(session["role"]), student_id=session.get("student_id"))
+        actor = Actor(role=Role.STUDENT, student_id=session.get("student_id"))
         student_id = request.form.get("student_id", type=int)
 
         with get_session() as db_session:

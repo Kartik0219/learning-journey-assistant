@@ -121,7 +121,7 @@ def test_insight_blocked_without_active_consent(seeded_db, monkeypatch):
         record_consent(session, student, given=False)  # withdraw
         with pytest.raises(ConsentError):
             ai_insight_api.get_ai_insight(
-                session, Actor(role=Role.STAFF), student.id
+                session, Actor(role=Role.STUDENT, student_id=student.id), student.id
             )
 
 
@@ -174,7 +174,9 @@ def test_cache_never_bypasses_access_control(seeded_db, monkeypatch):
     with get_session() as session:
         me = _student(session, "DEMO0001")
         other = _student(session, "DEMO0002")
-        ai_insight_api.get_ai_insight(session, Actor(role=Role.STAFF), other.id)  # warms cache
+        ai_insight_api.get_ai_insight(  # DEMO0002 warms the cache for themself
+            session, Actor(role=Role.STUDENT, student_id=other.id), other.id
+        )
         with pytest.raises(AuthorizationError):
             ai_insight_api.get_ai_insight(
                 session, Actor(role=Role.STUDENT, student_id=me.id), other.id

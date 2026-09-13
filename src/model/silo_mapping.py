@@ -263,9 +263,9 @@ def _extract_from_feedback_text(
             severity=_severity_for(clause_lower),
             confidence=round(confidence, 4),
             reviewed=confidence >= CONFIDENCE_REVIEW_THRESHOLD,
-            # F4: below the threshold this is *held for review* - which now
-            # means a real queue a human works through
-            # (src.deliver.review_api), not a dead end.
+            # F4: below the threshold this is held back and never shown to
+            # the student. The staff review queue that could approve it was
+            # removed when the app became student-only.
             review_status=(
                 "auto_approved"
                 if confidence >= CONFIDENCE_REVIEW_THRESHOLD

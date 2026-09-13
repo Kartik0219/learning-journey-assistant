@@ -20,9 +20,8 @@ from dataclasses import dataclass
 
 
 class Role(str, enum.Enum):
+    # The app is student-only: Staff and Admin roles were removed.
     STUDENT = "student"
-    STAFF = "staff"
-    ADMIN = "admin"
 
 
 @dataclass(frozen=True)
@@ -41,13 +40,10 @@ class AuthorizationError(PermissionError):
 def require_student_access(actor: Actor, target_student_id: int) -> None:
     """Enforce N6 for any endpoint that returns one student's data.
 
-    A STUDENT actor may only access their own `student_id`. STAFF and
-    ADMIN may access any student (N1: role-based access, not just
-    "logged in or not") - tightening that further (e.g. staff scoped to
-    their own subjects) is a product decision for whoever builds the
-    real dashboard, not something this primitive should guess at.
+    Every actor is a student, and a student may only access their own
+    `student_id`. Anything else is refused.
     """
-    if actor.role == Role.STUDENT and actor.student_id != target_student_id:
+    if actor.role != Role.STUDENT or actor.student_id != target_student_id:
         raise AuthorizationError(
             f"Actor (student_id={actor.student_id}) is not authorised to "
             f"access student_id={target_student_id}."
