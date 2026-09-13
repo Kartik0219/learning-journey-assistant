@@ -221,6 +221,11 @@ def _extract_from_silo_tags(
             severity=severity,
             confidence=SILO_TAG_CONFIDENCE,
             reviewed=True,
+            # A SILO tag is a stated fact about the result rather than an
+            # inference, so it is never held: F4 holds only low-confidence
+            # items. Marked auto_approved so the review queue can tell
+            # "passed triage" apart from "a human approved this".
+            review_status="auto_approved",
         )
         session.add(gap)
         session.flush()
@@ -258,6 +263,14 @@ def _extract_from_feedback_text(
             severity=_severity_for(clause_lower),
             confidence=round(confidence, 4),
             reviewed=confidence >= CONFIDENCE_REVIEW_THRESHOLD,
+            # F4: below the threshold this is *held for review* - which now
+            # means a real queue a human works through
+            # (src.deliver.review_api), not a dead end.
+            review_status=(
+                "auto_approved"
+                if confidence >= CONFIDENCE_REVIEW_THRESHOLD
+                else "pending"
+            ),
         )
         session.add(gap)
         session.flush()

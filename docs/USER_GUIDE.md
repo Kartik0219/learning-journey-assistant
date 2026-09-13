@@ -162,6 +162,41 @@ Treat the at-risk list as a prompt for a conversation, not a judgement.
 The figures are formative estimates derived from rubric feedback, not
 official results.
 
+### 4.1 Review queue — checking what students see
+
+![Skill-gap review queue](images/app-review-queue.png)
+
+When the system extracts a weakness from marker feedback, it records how
+confident it was. Anything below the confidence threshold is **held back
+from the student until a person checks it** — and this page is where that
+check happens.
+
+Each row shows the actual line of feedback the gap came from, so you are
+judging the evidence rather than taking the system's word for it, along
+with the student, subject and assessment. The queue is ordered
+lowest-confidence first: those are the ones the system was least sure
+about, and where your judgement adds the most.
+
+For each one you can:
+
+- **Approve** — the gap becomes visible on that student's dashboard and
+  feeds their study plan.
+- **Reject** — it is discarded and never shown. It does not come back.
+- **Correct the learning outcome** — pick the right SILO from the
+  dropdown before deciding. Use this when the evidence is a genuine
+  weakness but the system linked it to the wrong outcome.
+
+Two things worth knowing:
+
+- **Every decision is logged**, with who made it and any outcome you
+  corrected. It is an audit trail, not a silent edit.
+- **Nothing here touches a grade.** Approving a gap changes what study
+  support a student sees; it does not alter any official result.
+
+Items marked "passed triage" scored above the confidence threshold and
+were never withheld, so they are not listed — you are only asked about
+the ones the system itself was unsure of.
+
 ---
 
 ## 5. Troubleshooting

@@ -87,6 +87,8 @@ or .xlsx│  connect   │    when no credentials / dataset set)
 | `/resources` | GET | Signed-in † | Revision materials |
 | `/ai-insight` | GET | Signed-in † | **Opt-in** LLM analysis; off unless a provider is configured |
 | `/coordinator` | GET | Staff / Admin only (N6) | Cohort report: per-subject/SILO averages, at-risk list |
+| `/review` | GET | Staff / Admin only (N6) | F4 review queue: the low-confidence gaps held back from students |
+| `/review/<gap_id>` | POST | Staff / Admin only (N6) | Record an approve/reject decision, optionally correcting the SILO link (F5) |
 | `/practice/<recommendation_id>` | POST | Student | Marks a recommendation as practised (engagement, F11) |
 
 † A student sees only their own record. Staff/Admin may view a selected
@@ -205,6 +207,45 @@ set the key in the Render dashboard, never in the repo.
 
 ---
 
+## 6a. The skill-gap review gate (F4, F5)
+
+F4 requires that low-confidence gaps are "held for review and are not
+shown to the student **until checked**". Checked by a person — which is
+what `/review` provides.
+
+**How a gap moves.** `SkillGap.review_status` carries the state:
+
+| Status | Set by | Visible to student? |
+|---|---|---|
+| `auto_approved` | extraction, confidence ≥ `CONFIDENCE_REVIEW_THRESHOLD` (0.15) | yes |
+| `pending` | extraction, confidence < threshold | no — sits in `/review` |
+| `approved` | a Staff/Admin reviewer | yes |
+| `rejected` | a Staff/Admin reviewer | no, and leaves the queue |
+
+`reviewed` (bool) stays the single flag every student-facing query
+filters on; `review_status` is what makes the *gate* auditable.
+
+**Why both columns exist.** `reviewed=False` alone means two different
+things — "nobody has looked at this" and "a human looked and rejected
+it" — so a rejected gap would reappear in the queue for ever. It is worth
+knowing the history here: before this feature, `reviewed` was set once at
+extraction time by the confidence comparison and never changed again. The
+field was named `reviewed`, so the code read as compliant, but no human
+ever reviewed anything and nothing below the threshold could ever reach a
+student. A threshold is triage, not a review.
+
+**F5.** `review_gap()` accepts a `learning_outcome_id`, so a reviewer can
+correct a wrong gap→SILO link while deciding. The outcome must belong to
+the subject the result was assessed under — staff correct links, they
+don't invent cross-subject ones.
+
+**N4.** Every decision writes an append-only audit row
+(`skill_gap_approved` / `skill_gap_rejected`) naming the gap and, when the
+link changed, the `silo:<from>-><to>` correction — so the review history
+is reconstructable from the audit log alone.
+
+---
+
 ## 7. Security operations
 
 Implemented in `src/security/`, covered by `tests/test_security.py` and
@@ -213,8 +254,11 @@ Implemented in `src/security/`, covered by `tests/test_security.py` and
 - **Authentication** — salted PBKDF2 hashes via werkzeug; no plaintext
   passwords stored. Every attempt, success or failure, is audit-logged
   (`sign_in` / `sign_in_failed`, N4).
-- **Authorization** — server-side role checks (N6). `/coordinator` is
-  Staff/Admin only; never rely on hiding a link in a template.
+- **Authorization** — server-side role checks (N6). `/coordinator` and
+  `/review` are Staff/Admin only; never rely on hiding a link in a
+  template. `tests/test_deliver_app.py` covers the case that actually
+  matters: a student POSTing straight at `/review/<gap_id>` gets 403 and
+  the gap does not move.
 - **Consent** — `ensure_consent_active` gates the Estimate stage (N2).
 - **Encryption at rest** — Fernet (N3).
 - **Audit log** — append-only `audit_log_entries` (N4).
