@@ -31,10 +31,6 @@ def _login_student(client, number="DEMO0001"):
     client.post("/login", data={"role": "student", "student_number": number, "password": number})
 
 
-def _login_staff(client):
-    client.post("/login", data={"role": "staff", "username": "staff", "password": "staff123"})
-
-
 def _id_of(number):
     with get_session() as db:
         from src.security.encryption import blind_index
@@ -56,12 +52,6 @@ def test_student_session_lists_only_themself(client):
     assert data["role"] == "student"
     assert [s["id"] for s in data["students"]] == [_id_of("DEMO0001")]
 
-
-def test_staff_session_lists_every_student(client):
-    _login_staff(client)
-    data = client.get("/api/session").get_json()
-    assert data["role"] == "staff"
-    assert len(data["students"]) == 3
 
 
 def test_student_gets_their_own_dashboard_with_real_scores(client):

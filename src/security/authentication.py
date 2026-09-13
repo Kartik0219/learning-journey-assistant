@@ -87,26 +87,6 @@ def set_student_password(session: Session, student: Student, plaintext: str) -> 
     return credential
 
 
-def set_staff_password(
-    session: Session, username: str, role: Role, plaintext: str
-) -> UserCredential:
-    """Create or replace a Staff/Admin credential, identified by
-    `username` (there is no Student row to key off for these roles)."""
-    if role == Role.STUDENT:
-        raise ValueError("set_staff_password is for STAFF/ADMIN roles - use set_student_password.")
-    existing = session.query(UserCredential).filter_by(username=username).one_or_none()
-    if existing:
-        existing.password_hash = hash_password(plaintext)
-        existing.role = role.value
-        return existing
-    credential = UserCredential(
-        role=role.value, username=username, password_hash=hash_password(plaintext)
-    )
-    session.add(credential)
-    session.flush()
-    return credential
-
-
 def authenticate_student(
     session: Session, student_number: str, password: str
 ) -> AuthenticatedIdentity:
@@ -123,14 +103,3 @@ def authenticate_student(
         raise AuthenticationError("Incorrect student number or password.")
 
     return AuthenticatedIdentity(role=Role.STUDENT, student_id=student.id)
-
-
-def authenticate_staff(session: Session, username: str, password: str) -> AuthenticatedIdentity:
-    """Verify a username/password pair for a Staff or Admin account."""
-    credential = session.query(UserCredential).filter_by(username=username).one_or_none()
-    if credential is None or credential.role not in (Role.STAFF.value, Role.ADMIN.value):
-        raise AuthenticationError("Incorrect username or password.")
-    if not verify_password(password, credential.password_hash):
-        raise AuthenticationError("Incorrect username or password.")
-
-    return AuthenticatedIdentity(role=Role(credential.role), student_id=None)

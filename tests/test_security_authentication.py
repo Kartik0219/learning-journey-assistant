@@ -11,10 +11,8 @@ from src.db.database import get_session
 from src.db.models import Student
 from src.security.authentication import (
     AuthenticationError,
-    authenticate_staff,
     authenticate_student,
     hash_password,
-    set_staff_password,
     set_student_password,
     verify_password,
 )
@@ -85,51 +83,19 @@ def test_set_student_password_is_idempotent_and_replaces_existing(seeded_db):
             authenticate_student(session, "DEMO0001", "first-password")
 
 
-def test_authenticate_staff_succeeds_with_correct_credentials(clean_db):
-    with get_session() as session:
-        set_staff_password(session, "coordinator1", Role.STAFF, "s3cret")
-
-        identity = authenticate_staff(session, "coordinator1", "s3cret")
-
-        assert identity.role == Role.STAFF
-        assert identity.student_id is None
-
-
-def test_authenticate_staff_rejects_wrong_password(clean_db):
-    with get_session() as session:
-        set_staff_password(session, "admin1", Role.ADMIN, "s3cret")
-
-        with pytest.raises(AuthenticationError):
-            authenticate_staff(session, "admin1", "wrong")
-
-
-def test_authenticate_staff_rejects_unknown_username(clean_db):
-    with get_session() as session:
-        with pytest.raises(AuthenticationError):
-            authenticate_staff(session, "nobody", "anything")
-
-
-def test_set_staff_password_rejects_student_role(clean_db):
-    with get_session() as session:
-        with pytest.raises(ValueError):
-            set_staff_password(session, "someone", Role.STUDENT, "password")
-
-
-def test_seed_demo_credentials_seeds_every_student_and_two_staff_accounts(seeded_db):
+def test_seed_demo_credentials_seeds_every_student_and_no_staff_accounts(seeded_db):
     """seeded_db already ran run_parse_stage(), which calls
     seed_demo_credentials - each demo student should be able to sign in
-    with their own student number as the password, and the fixed staff/
-    admin demo accounts should exist."""
+    with their own student number as the password, and no staff/admin
+    credentials exist (the app is student-only)."""
+    from src.db.models import UserCredential
+
     with get_session() as session:
         for student_number in ("DEMO0001", "DEMO0002", "DEMO0003"):
             identity = authenticate_student(session, student_number, student_number)
             assert identity.role == Role.STUDENT
 
-        staff_identity = authenticate_staff(session, "staff", "staff123")
-        assert staff_identity.role == Role.STAFF
-
-        admin_identity = authenticate_staff(session, "admin", "admin123")
-        assert admin_identity.role == Role.ADMIN
+        assert session.query(UserCredential).filter(UserCredential.student_id.is_(None)).count() == 0
 
 
 def test_seed_demo_credentials_is_idempotent(seeded_db):

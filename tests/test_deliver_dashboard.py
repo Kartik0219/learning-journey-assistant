@@ -72,7 +72,7 @@ def test_dashboard_priority_outcomes_are_the_three_lowest_scoring(seeded_db):
         _run_model_and_estimate_stages(session, student)
 
         data = get_student_dashboard(
-            session, Actor(role=Role.STAFF), student_id=student.id
+            session, Actor(role=Role.STUDENT, student_id=student.id), student_id=student.id
         )
 
         scores = [o["mastery_score"] for o in data["priority_outcomes"]]

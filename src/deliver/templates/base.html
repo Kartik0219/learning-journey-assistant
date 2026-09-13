@@ -296,7 +296,6 @@
       text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--primary); white-space: nowrap;
     }
 
-    .staff-switcher { margin-bottom: 20px; }
     .coordinator-outcome { padding: 16px 0; border-top: 1px solid var(--border); }
     .coordinator-outcome:first-of-type { border-top: none; padding-top: 0; }
 
@@ -373,10 +372,6 @@
         <a href="{{ url_for('ai_insight') }}" class="{{ 'active' if request.endpoint == 'ai_insight' else '' }}">AI Insight</a>
       </nav>
       <span>
-        {% if session.get('role') in ('staff', 'admin') %}
-          <a href="{{ url_for('coordinator') }}">Coordinator</a> ·
-          <a href="{{ url_for('review_queue') }}">Review</a> ·
-        {% endif %}
         {{ session.get('role')|capitalize }} · <a href="{{ url_for('logout') }}">Log out</a>
         <button type="button" class="theme-toggle" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" style="margin-left:10px; vertical-align:middle;">🌙</button>
       </span>

@@ -209,12 +209,11 @@ class SkillGap(Base):
     shown to the student until checked" - hence `source_evidence_text`,
     `confidence`, and `reviewed` all being required, not optional extras.
 
-    "until checked" means checked *by a person*. `review_status` and the
-    staff review queue (src.deliver.review_api) are what make that true:
-    before they existed, `reviewed` was set once at extraction time by a
-    confidence comparison and never changed again, so nothing below the
-    threshold could ever reach a student and no human ever checked
-    anything. A threshold is a triage step, not a review.
+    The app is now student-only, so there is no staff review queue: a gap
+    below the confidence threshold stays held (`reviewed` False,
+    `review_status` "pending") and is never shown. On the 150-student
+    dataset every gap comes from an explicit SILO tag and is auto-approved,
+    so nothing is held there.
     """
 
     __tablename__ = "skill_gaps"

@@ -3,7 +3,6 @@
 {% block content %}
 
   {% include "_disclaimer.html" %}
-  {% include "_staff_switcher.html" %}
 
   {% macro status_class(status) -%}
     {%- if status == 'Mastered' -%}good{%- elif status == 'On Track' -%}warn{%- else -%}bad{%- endif -%}
