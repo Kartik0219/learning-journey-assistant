@@ -19,6 +19,15 @@ from src.security.authorization import Actor, AuthorizationError, Role
 from src.security.consent import ConsentError, record_consent
 
 
+@pytest.fixture(autouse=True)
+def _fresh_insight_cache():
+    """The insight cache is per process; never let one test's result leak
+    into another's."""
+    ai_insight_api.clear_insight_cache()
+    yield
+    ai_insight_api.clear_insight_cache()
+
+
 def _student(session, student_number: str) -> Student:
     return next(
         s for s in session.query(Student).all() if s.student_number == student_number
@@ -114,3 +123,93 @@ def test_insight_blocked_without_active_consent(seeded_db, monkeypatch):
             ai_insight_api.get_ai_insight(
                 session, Actor(role=Role.STAFF), student.id
             )
+
+
+def test_successful_insight_is_cached_so_reloads_do_not_call_the_provider(
+    seeded_db, monkeypatch
+):
+    calls = []
+
+    def _counting(*a, **k):
+        calls.append(1)
+        return _STUB
+
+    monkeypatch.setattr(ai_insight_api, "is_ai_enabled", lambda *a, **k: True)
+    monkeypatch.setattr(ai_insight_api, "analyze_student", _counting)
+
+    with get_session() as session:
+        student = _student(session, "DEMO0001")
+        actor = Actor(role=Role.STUDENT, student_id=student.id)
+        first = ai_insight_api.get_ai_insight(session, actor, student.id)
+        second = ai_insight_api.get_ai_insight(session, actor, student.id)
+
+    assert len(calls) == 1
+    assert second["insight"] == first["insight"]
+
+
+def test_cache_expires(seeded_db, monkeypatch):
+    calls = []
+    clock = [1000.0]
+
+    monkeypatch.setattr(ai_insight_api.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(ai_insight_api, "is_ai_enabled", lambda *a, **k: True)
+    monkeypatch.setattr(ai_insight_api, "analyze_student", lambda *a, **k: calls.append(1) or _STUB)
+
+    with get_session() as session:
+        student = _student(session, "DEMO0001")
+        actor = Actor(role=Role.STUDENT, student_id=student.id)
+        ai_insight_api.get_ai_insight(session, actor, student.id)
+        clock[0] += ai_insight_api.INSIGHT_CACHE_SECONDS + 1
+        ai_insight_api.get_ai_insight(session, actor, student.id)
+
+    assert len(calls) == 2
+
+
+def test_cache_never_bypasses_access_control(seeded_db, monkeypatch):
+    """N6 is checked before the cache: a cached insight for DEMO0002 must not
+    be reachable by DEMO0001."""
+    monkeypatch.setattr(ai_insight_api, "is_ai_enabled", lambda *a, **k: True)
+    monkeypatch.setattr(ai_insight_api, "analyze_student", lambda *a, **k: _STUB)
+
+    with get_session() as session:
+        me = _student(session, "DEMO0001")
+        other = _student(session, "DEMO0002")
+        ai_insight_api.get_ai_insight(session, Actor(role=Role.STAFF), other.id)  # warms cache
+        with pytest.raises(AuthorizationError):
+            ai_insight_api.get_ai_insight(
+                session, Actor(role=Role.STUDENT, student_id=me.id), other.id
+            )
+
+
+def test_rate_limit_shows_a_friendly_busy_message_and_is_not_cached(seeded_db, monkeypatch):
+    def _limited(*a, **k):
+        raise ai_insight_api.AIRateLimited("Gemini rate limit (HTTP 429)")
+
+    monkeypatch.setattr(ai_insight_api, "is_ai_enabled", lambda *a, **k: True)
+    monkeypatch.setattr(ai_insight_api, "analyze_student", _limited)
+
+    with get_session() as session:
+        student = _student(session, "DEMO0001")
+        actor = Actor(role=Role.STUDENT, student_id=student.id)
+        data = ai_insight_api.get_ai_insight(session, actor, student.id)
+        assert data["error"].startswith("The AI service is busy")
+        assert data["insight"] is None
+
+        monkeypatch.setattr(ai_insight_api, "analyze_student", lambda *a, **k: _STUB)
+        assert ai_insight_api.get_ai_insight(session, actor, student.id)["insight"] is not None
+
+
+def test_daily_quota_says_it_resets_rather_than_try_in_a_minute(seeded_db, monkeypatch):
+    def _daily(*a, **k):
+        raise ai_insight_api.AIRateLimited("Gemini daily free-tier quota is used up")
+
+    monkeypatch.setattr(ai_insight_api, "is_ai_enabled", lambda *a, **k: True)
+    monkeypatch.setattr(ai_insight_api, "analyze_student", _daily)
+
+    with get_session() as session:
+        student = _student(session, "DEMO0001")
+        data = ai_insight_api.get_ai_insight(
+            session, Actor(role=Role.STUDENT, student_id=student.id), student.id
+        )
+    assert "resets within 24 hours" in data["error"]
+    assert "try again in a minute" not in data["error"]
