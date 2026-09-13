@@ -15,7 +15,10 @@ services:
     name: learning-journey-assistant-demo
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    # The React SPA (/app/) is built here too. If Node is unavailable the
+    # build still succeeds without it - /app then reports "not built" and
+    # the server-rendered app is unaffected.
+    buildCommand: "pip install -r requirements.txt && (cd frontend && npm ci --no-audit --no-fund && npm run build || echo 'SPA build skipped')"
     startCommand: "python -m src.pipeline && gunicorn 'src.deliver.app:create_app()' --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
     envVars:
       - key: PYTHON_VERSION
