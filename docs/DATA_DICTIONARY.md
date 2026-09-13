@@ -59,7 +59,7 @@ docstring for the full rationale):
 | `source_evidence_text` | The verbatim `"SILOn: description"` tag. | A verbatim clause of `feedback_text`, split on punctuation/connectives. Required either way - not optional - F4 mandates every gap cite a specific line of rubric/feedback (N5: nothing paraphrased). |
 | `severity` | Score band: `<50` high, `50-69` medium, `70-79` low. No gap at all is recorded for a tagged SILO on a result scoring `>= MASTERY_THRESHOLD` (80). | Keyword-marker match (`HIGH_SEVERITY_MARKERS` / `LOW_SEVERITY_MARKERS`), else `medium`. |
 | `confidence` | Fixed `1.0` (`SILO_TAG_CONFIDENCE`) - an explicit institutional tag is a stated fact about the result, not an inference. | TF-IDF (character n-gram) cosine similarity between the evidence clause and the closest rubric criterion. Below `CONFIDENCE_REVIEW_THRESHOLD` (0.15) -> `reviewed` stays `False`. |
-| `reviewed` | Always `True`. | `confidence >= CONFIDENCE_REVIEW_THRESHOLD`. Either way, only `reviewed=True` gaps may be surfaced to the student (F4) — enforced in `src.deliver.dashboard_api.get_student_dashboard()`. |
+| `reviewed` | Always `True`. | `confidence >= CONFIDENCE_REVIEW_THRESHOLD`. Either way, only `reviewed=True` gaps may be surfaced to the student (F4) — enforced in `src.deliver.dashboard_api.get_student_dashboard()`. The app is student-only, so there is no staff review queue: a `False` gap stays hidden permanently. |
 | `learning_outcome_id` | Set by `map_gap_to_learning_outcome()`'s exact-SILO-code match (the tag names its own code) — see next row. | Set by the same function's TF-IDF-similarity fallback, unchanged from the original design. |
 
 `learning_outcome_id` (both paths): set by
@@ -78,7 +78,7 @@ otherwise, left `None` rather than forced onto a weak match below
 
 | Field | Notes |
 |---|---|
-| `score` | 0.0-1.0. `src.estimate.mastery.calculate_mastery_score()` (F6): `clip(mean_assessment_score/100 - Σ(severity_weight × confidence) over reviewed gaps + engagement_bonus, 0, 1)`. Must be reproducible from `explanation_text` + the underlying `skill_gaps` - if you can't explain a number, don't write it. Unchanged by the Phase 6 real-dataset work - it reads `severity`/`confidence`/`learning_outcome_id` off `skill_gaps` the same way regardless of which extraction path wrote them. |
+| `score` | 0.0-1.0. `src.estimate.mastery.calculate_mastery_score()` (F6): `clip(baseline - Σ(severity_weight × confidence) over reviewed feedback-text gaps + engagement_bonus, 0, 1)`. **Baseline** is the student's results tagged with this outcome (every result in the subject if none are tagged), averaged by assessment `weight` when every result has one (the 150-student workbook), otherwise a plain mean (the sample CSVs). Gaps from explicit SILO tags appear in the explanation as evidence but are **not** subtracted, because their severity comes from the same score already in the baseline. Must be reproducible from `explanation_text` + the underlying rows - if you can't explain a number, don't write it. |
 | `explanation_text` | Built from a template naming the exact baseline percentage, every contributing gap's quote/severity/confidence, and any engagement bonus applied — never freely generated. |
 
 ## `topic_materials`
@@ -113,10 +113,10 @@ students get truthful recommendations, not hallucinated study material.
 
 | Field | Notes |
 |---|---|
-| `role` | `student` / `staff` / `admin` (`Role.value`). |
-| `student_id` | Set for a `student` credential, unique, FK to `students`. `None` for staff/admin. |
-| `username` | Set for a `staff`/`admin` credential, unique. `None` for a student credential. |
-| `password_hash` | Salted PBKDF2 hash (werkzeug `generate_password_hash`) — never a plaintext password. Checked by `src.security.authentication.authenticate_student` / `authenticate_staff`, called from `src.deliver.app`'s `/login` route. Seeded idempotently by `src.parse.cleaners.seed_demo_credentials` — see docs/ENVIRONMENT_SETUP.md's "Demo accounts" table for the fixed demo values. |
+| `role` | Always `student` (`Role.STUDENT.value`). Staff and Admin roles were removed on 13 Sep 2026. |
+| `student_id` | FK to `students`, unique. |
+| `username` | Unused since Staff/Admin were removed (kept so no schema change is needed to restore them). |
+| `password_hash` | Salted PBKDF2 hash (werkzeug `generate_password_hash`) — never a plaintext password. Checked by `src.security.authentication.authenticate_student`, called from `src.deliver.app`'s `/login` route. Seeded idempotently by `src.parse.cleaners.seed_demo_credentials` — see docs/ENVIRONMENT_SETUP.md's "Demo accounts" table for the fixed demo values. |
 
 ## `quiz_questions` (app-build phase — Prabhashi, AI feature)
 
