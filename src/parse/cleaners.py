@@ -177,6 +177,8 @@ def upsert_assessment_result(session: Session, record: AssessmentResultRecord) -
         # IOG-33: carry the real dataset's explicit SILO tags through on
         # re-import too, not just on first insert.
         existing.silo_tags_text = record.silo_tags_text
+        existing.weight = record.weight
+        existing.weighted_score = record.weighted_score
         return existing
 
     result = AssessmentResult(
@@ -185,6 +187,8 @@ def upsert_assessment_result(session: Session, record: AssessmentResultRecord) -
         score=record.score,
         feedback_text=record.feedback_text,
         silo_tags_text=record.silo_tags_text,
+        weight=record.weight,
+        weighted_score=record.weighted_score,
     )
     session.add(result)
     session.flush()

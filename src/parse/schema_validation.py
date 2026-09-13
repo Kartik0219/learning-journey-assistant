@@ -81,6 +81,11 @@ class AssessmentResultRecord(BaseModel):
     # extraction (src.model.silo_mapping) falls back to its older
     # feedback-text heuristic whenever this is absent.
     silo_tags_text: str | None = None
+    # The real workbook's "Weight" (share of the subject total, 0-1) and
+    # "Weighted Score" (score x weight) columns, shown as-is on the
+    # student's Results page. Absent from the sample CSVs.
+    weight: float | None = Field(default=None, ge=0, le=1)
+    weighted_score: float | None = Field(default=None, ge=0, le=100)
 
     @field_validator("subject_code", "student_number")
     @classmethod

@@ -69,6 +69,66 @@ def test_login_without_password_shows_error_not_crash(client):
     assert b"Enter your student number and password" in response.data
 
 
+def _log_in_student(client, student_number: str = "DEMO0001") -> None:
+    client.post(
+        "/login",
+        data={"role": "student", "student_number": student_number, "password": student_number},
+    )
+
+
+def test_results_redirects_to_login_when_not_signed_in(client):
+    response = client.get("/results", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/login" in response.headers["Location"]
+
+
+def test_results_page_shows_every_workbook_column_per_subject(client):
+    _log_in_student(client)
+    response = client.get("/results")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    for heading in ("Assessment Type", "Score (1-100)", "Feedback Comment", "SILO's", "Weight", "Weighted Score"):
+        assert heading in body
+    assert "DEMO101" in body  # the sample student's subject
+
+
+def test_results_page_shows_weight_and_weighted_score_from_the_workbook(client):
+    from src.db.database import get_session
+    from src.db.models import AssessmentResult, Student
+
+    with get_session() as session:
+        student = next(s for s in session.query(Student).all() if s.student_number == "DEMO0001")
+        result = session.query(AssessmentResult).filter_by(student_id=student.id).first()
+        result.silo_tags_text = "SILO2: Apply demo techniques"
+        result.weight = 0.25
+        result.weighted_score = 12.75
+
+    _log_in_student(client)
+    body = client.get("/results").get_data(as_text=True)
+
+    assert "25%" in body
+    assert "12.75" in body
+    assert "Apply demo techniques" in body
+    assert "Weighted total: 12.75" in body
+
+
+def test_student_cannot_read_another_students_results(seeded_db):
+    """N6: the results data function refuses a student asking for someone else."""
+    import pytest
+
+    from src.db.database import get_session
+    from src.db.models import Student
+    from src.deliver.dashboard_api import get_student_results
+    from src.security.authorization import Actor, AuthorizationError, Role
+
+    with get_session() as session:
+        students = {s.student_number: s for s in session.query(Student).all()}
+        me, other = students["DEMO0001"], students["DEMO0002"]
+        with pytest.raises(AuthorizationError):
+            get_student_results(session, Actor(role=Role.STUDENT, student_id=me.id), other.id)
+
+
 def test_staff_can_reach_coordinator_report(client):
     client.post("/login", data={"role": "staff", "username": "staff", "password": "staff123"})
 

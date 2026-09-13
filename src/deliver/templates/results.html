@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Results — {{ data.student.display_name }}{% endblock %}
+{% block content %}
+
+  {% include "_disclaimer.html" %}
+  {% include "_staff_switcher.html" %}
+
+  <div class="card">
+    <h1>{{ data.student.display_name }}'s results</h1>
+    <p class="muted">Every assessment in each of your subjects, exactly as recorded: score, marker feedback, the subject learning outcomes (SILOs) it covers, and how much it counts towards the subject total.</p>
+  </div>
+
+  {% if data.subjects %}
+    {% for subject in data.subjects %}
+      <div class="card">
+        <h2 style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <span>{{ subject.code }}{% if subject.name and subject.name != subject.code %} — {{ subject.name }}{% endif %}</span>
+          {% if subject.total_weighted_score is not none %}
+            <span class="muted" style="font-weight:600;">Weighted total: {{ '%.2f'|format(subject.total_weighted_score) }}</span>
+          {% endif %}
+        </h2>
+        <div style="overflow-x:auto;">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Assessment Type</th>
+                <th>Score (1-100)</th>
+                <th>Feedback Comment</th>
+                <th>SILO's</th>
+                <th>Weight</th>
+                <th>Weighted Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in subject.assessments %}
+                <tr>
+                  <td><strong>{{ a.assessment_type }}</strong></td>
+                  <td>{{ '%g'|format(a.score) if a.score is not none else '—' }}</td>
+                  <td>{{ a.feedback or '—' }}</td>
+                  <td>
+                    {% for code, description in a.silos %}
+                      <div><strong>{{ code }}</strong>{% if description %}: {{ description }}{% endif %}</div>
+                    {% else %}—{% endfor %}
+                  </td>
+                  <td>{{ '%.0f%%'|format(a.weight * 100) if a.weight is not none else '—' }}</td>
+                  <td>{{ '%.2f'|format(a.weighted_score) if a.weighted_score is not none else '—' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="card">
+      <p class="muted">No assessment results recorded yet.</p>
+    </div>
+  {% endif %}
+
+  <style>
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 760px; }
+    .results-table th, .results-table td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border, #e5e7eb); }
+    .results-table th { font-weight: 700; white-space: nowrap; color: var(--muted, #6b7280); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; }
+    .results-table td:nth-child(2), .results-table td:nth-child(5), .results-table td:nth-child(6) { white-space: nowrap; }
+  </style>
+
+{% endblock %}

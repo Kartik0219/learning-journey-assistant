@@ -173,6 +173,8 @@ def load_assessment_results() -> pd.DataFrame:
             "Score (1-100)": "score",
             "Feedback Comment": "feedback_text",
             "SILO's": "silo_tags_text",
+            "Weight": "weight",
+            "Weighted Score": "weighted_score",
         }
     )
     df["assessment_name"] = df["Assessment Type"].astype(str).str.strip()
@@ -186,8 +188,11 @@ def load_assessment_results() -> pd.DataFrame:
         "score",
         "feedback_text",
         "silo_tags_text",
+        "weight",
+        "weighted_score",
     ]
-    return df[columns]
+    # Weight / Weighted Score are display-only; tolerate a workbook without them.
+    return df.reindex(columns=columns)
 
 
 def load_topic_materials() -> pd.DataFrame:

@@ -189,6 +189,10 @@ class AssessmentResult(Base):
     # directly instead of guessing relevance from feedback wording. None
     # for the synthetic sample dataset, which has no such column.
     silo_tags_text: Mapped[str | None] = mapped_column(Text, default=None)
+    # Real dataset only: the assessment's share of the subject total (0-1)
+    # and score x weight, verbatim from the workbook. None for sample data.
+    weight: Mapped[float | None] = mapped_column(Float, default=None)
+    weighted_score: Mapped[float | None] = mapped_column(Float, default=None)
 
     assessment: Mapped[Assessment] = relationship(back_populates="results")
     student: Mapped[Student] = relationship(back_populates="results")

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from src.connect.excel_loader import parse_silo_tags
 from src.db.models import LearningOutcome, MasteryScore, Student, StudyRecommendation, TopicMaterial
 from src.estimate.quiz import latest_quiz_questions
 from src.security.authorization import Actor, require_student_access
@@ -189,6 +190,47 @@ def get_student_resources(session: Session, actor: Actor, student_id: int) -> di
             )
 
     subjects = [{"code": code, "materials": materials} for code, materials in by_subject.items()]
+
+    return {
+        "student": {"id": student.id, "display_name": student.display_name},
+        "subjects": subjects,
+    }
+
+
+def get_student_results(session: Session, actor: Actor, student_id: int) -> dict:
+    """Every assessment result for one student, grouped by subject, carrying
+    the workbook's own columns (Assessment Type, Score, Feedback Comment,
+    SILO's, Weight, Weighted Score) unchanged. Weight and weighted score are
+    None for the sample dataset, which has neither column."""
+    require_student_access(actor, student_id)
+    ensure_consent_active(session, student_id)
+
+    student = session.get(Student, student_id)
+    if student is None:
+        raise ValueError(f"No student with id={student_id}")
+
+    by_subject: dict[int, dict] = {}
+    for result in sorted(student.results, key=lambda r: (r.assessment.subject.code, r.assessment.name)):
+        subject = result.assessment.subject
+        entry = by_subject.setdefault(
+            subject.id, {"code": subject.code, "name": subject.name, "assessments": []}
+        )
+        entry["assessments"].append(
+            {
+                "assessment_type": result.assessment.name,
+                "score": result.score,
+                "feedback": result.feedback_text,
+                "silos": parse_silo_tags(result.silo_tags_text or ""),
+                "weight": result.weight,
+                "weighted_score": result.weighted_score,
+            }
+        )
+
+    subjects = []
+    for entry in by_subject.values():
+        weighted = [a["weighted_score"] for a in entry["assessments"] if a["weighted_score"] is not None]
+        entry["total_weighted_score"] = round(sum(weighted), 2) if weighted else None
+        subjects.append(entry)
 
     return {
         "student": {"id": student.id, "display_name": student.display_name},

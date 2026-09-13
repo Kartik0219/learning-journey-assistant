@@ -112,6 +112,8 @@ def results(student_id: int):
                     "assessment": result.assessment.name,
                     "score": result.score,
                     "feedback": result.feedback_text,
+                    "weight": result.weight,
+                    "weighted_score": result.weighted_score,
                     "silo_codes": sorted(set(codes), key=lambda c: int(c[4:])),
                 }
             )

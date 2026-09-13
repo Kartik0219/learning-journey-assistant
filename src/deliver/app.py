@@ -54,7 +54,11 @@ from src.db.database import get_session
 from src.db.models import Student
 from src.deliver.ai_insight_api import get_ai_insight
 from src.deliver.coordinator_api import get_coordinator_report
-from src.deliver.dashboard_api import get_student_dashboard, get_student_resources
+from src.deliver.dashboard_api import (
+    get_student_dashboard,
+    get_student_resources,
+    get_student_results,
+)
 from src.deliver.review_api import ReviewError, get_review_queue, review_gap
 from src.deliver.spa_api import api as spa_api
 from src.estimate.mastery import record_engagement
@@ -253,6 +257,34 @@ def create_app() -> Flask:
 
             return render_template(
                 "quizzes.html",
+                data=data,
+                actor_role=actor.role.value,
+                is_staff=actor.role != Role.STUDENT,
+                students=students,
+                current_student_id=target_student_id,
+            )
+
+    @app.route("/results")
+    def results():
+        """Every assessment result the student has, grouped by subject, with
+        the workbook's own columns: type, score, feedback, SILOs, weight and
+        weighted score."""
+        if "role" not in session:
+            return redirect(url_for("login"))
+
+        with get_session() as db_session:
+            actor, students, target_student_id = _resolve_actor_and_target(db_session)
+            try:
+                data = get_student_results(db_session, actor, target_student_id)
+            except AuthorizationError:
+                abort(403)
+            except ConsentError:
+                return render_template(
+                    "no_consent.html", student_id=target_student_id, actor_role=actor.role.value
+                )
+
+            return render_template(
+                "results.html",
                 data=data,
                 actor_role=actor.role.value,
                 is_staff=actor.role != Role.STUDENT,
