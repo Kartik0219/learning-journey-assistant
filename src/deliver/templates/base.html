@@ -374,6 +374,7 @@
       <span>
         {% if session.get('role') in ('staff', 'admin') %}
           <a href="{{ url_for('coordinator') }}">Coordinator</a> ·
+          <a href="{{ url_for('review_queue') }}">Review</a> ·
         {% endif %}
         {{ session.get('role')|capitalize }} · <a href="{{ url_for('logout') }}">Log out</a>
         <button type="button" class="theme-toggle" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" style="margin-left:10px; vertical-align:middle;">🌙</button>

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Skill-gap review queue — Learning Journey Assistant{% endblock %}
+{% block content %}
+
+  <style>
+    .review-row { padding: 18px 0; border-top: 1px solid var(--border); }
+    .review-row:first-of-type { border-top: none; padding-top: 0; }
+    .evidence {
+      margin: 10px 0; padding: 12px 14px; border-left: 3px solid var(--primary);
+      background: var(--surface-2); border-radius: 0 8px 8px 0;
+      font-style: italic; line-height: 1.5;
+    }
+    .review-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.85rem; }
+    .review-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+    .review-actions select { padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--ink); font-size: 0.85rem; max-width: 100%; }
+    .btn-approve, .btn-reject {
+      padding: 7px 16px; border-radius: 8px; border: 1px solid transparent;
+      font-weight: 600; font-size: 0.85rem; cursor: pointer;
+    }
+    .btn-approve { background: var(--primary); color: #fff; }
+    .btn-reject { background: transparent; color: var(--muted); border-color: var(--border); }
+    .btn-reject:hover { color: var(--ink); border-color: var(--muted); }
+    .counts { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 4px; }
+    .count-item strong { display: block; font-size: 1.5rem; line-height: 1.2; }
+    .notice { padding: 10px 14px; border-radius: 8px; background: var(--primary-soft);
+      color: var(--primary); font-weight: 600; font-size: 0.88rem; margin-bottom: 14px; }
+  </style>
+
+  {% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
+
+  <div class="card">
+    <h1>Skill-gap review queue</h1>
+    <p class="muted">
+      F4 holds every low-confidence extracted gap back from the student
+      <em>until a person checks it</em>. This is where that check happens. Approving
+      a gap makes it visible on the student's dashboard; rejecting it removes it
+      from the queue without ever showing it. You can also correct the learning
+      outcome a gap was linked to (F5).
+    </p>
+    <div class="counts">
+      <div class="count-item"><strong>{{ queue.counts.pending }}</strong><span class="muted">Awaiting review</span></div>
+      <div class="count-item"><strong>{{ queue.counts.approved }}</strong><span class="muted">Approved</span></div>
+      <div class="count-item"><strong>{{ queue.counts.rejected }}</strong><span class="muted">Rejected</span></div>
+      <div class="count-item"><strong>{{ queue.counts.auto_approved }}</strong><span class="muted">Passed triage</span></div>
+    </div>
+    <p class="muted" style="margin-top:14px;">
+      “Passed triage” items scored at or above the confidence threshold, so F4 did not
+      require them to be held — they were never withheld from students and are not
+      listed here.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Awaiting review
+      {% if queue.pending_total > queue.pending|length %}
+        <span class="muted">(showing {{ queue.pending|length }} of {{ queue.pending_total }}, lowest confidence first)</span>
+      {% endif %}
+    </h2>
+
+    {% if not queue.pending %}
+      <p class="muted">Nothing is being held back. Every extracted gap has either passed
+        triage or been decided by a reviewer.</p>
+    {% else %}
+      {% for gap in queue.pending %}
+        <div class="review-row">
+          <div class="review-meta">
+            <span class="badge {{ gap.severity }}">{{ gap.severity }}</span>
+            <span class="muted">{{ gap.confidence_pct }}% confidence</span>
+            <span class="muted">·</span>
+            <span class="muted">{{ gap.student_display_name }}</span>
+            <span class="muted">·</span>
+            <span class="muted">{{ gap.subject_code }} — {{ gap.assessment_name }}</span>
+          </div>
+
+          <p class="evidence">“{{ gap.evidence }}”</p>
+
+          <form method="post" action="{{ url_for('review_decision', gap_id=gap.id) }}">
+            <div class="review-actions">
+              <label for="lo-{{ gap.id }}" class="muted">Learning outcome:</label>
+              <select name="learning_outcome_id" id="lo-{{ gap.id }}">
+                <option value="">— unassigned —</option>
+                {% for lo in gap.available_outcomes %}
+                  <option value="{{ lo.id }}" {{ 'selected' if lo.id == gap.learning_outcome_id else '' }}>
+                    {{ lo.code }} — {{ lo.description|truncate(60) }}
+                  </option>
+                {% endfor %}
+              </select>
+              <button type="submit" name="decision" value="approve" class="btn-approve">Approve</button>
+              <button type="submit" name="decision" value="reject" class="btn-reject">Reject</button>
+            </div>
+          </form>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  {% if queue.recently_decided %}
+    <div class="card">
+      <h2>Recently decided</h2>
+      <table class="priority">
+        <tr><th>Evidence</th><th>Outcome</th><th>Decision</th><th>By</th></tr>
+        {% for gap in queue.recently_decided %}
+          <tr>
+            <td>{{ gap.evidence|truncate(70) }}</td>
+            <td>{{ gap.learning_outcome_code or '—' }}</td>
+            <td>{{ gap.review_status|capitalize }}</td>
+            <td>{{ gap.reviewed_by|capitalize }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+      <p class="muted" style="margin-top:12px;">
+        Every decision above is also written to the append-only audit log (N4).
+      </p>
+    </div>
+  {% endif %}
+
+{% endblock %}

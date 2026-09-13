@@ -204,6 +204,13 @@ class SkillGap(Base):
     feedback. Items with low confidence are held for review and are not
     shown to the student until checked" - hence `source_evidence_text`,
     `confidence`, and `reviewed` all being required, not optional extras.
+
+    "until checked" means checked *by a person*. `review_status` and the
+    staff review queue (src.deliver.review_api) are what make that true:
+    before they existed, `reviewed` was set once at extraction time by a
+    confidence comparison and never changed again, so nothing below the
+    threshold could ever reach a student and no human ever checked
+    anything. A threshold is a triage step, not a review.
     """
 
     __tablename__ = "skill_gaps"
@@ -216,7 +223,26 @@ class SkillGap(Base):
     source_evidence_text: Mapped[str] = mapped_column(Text)
     severity: Mapped[str] = mapped_column(String(20))  # e.g. "low" / "medium" / "high"
     confidence: Mapped[float] = mapped_column(Float)  # 0.0-1.0
+    # Whether this gap may be shown to the student. Stays the single flag
+    # every student-facing query filters on (src.deliver.dashboard_api).
     reviewed: Mapped[bool] = mapped_column(Boolean, default=False)
+    # F4's review gate proper. `reviewed` alone cannot express it: False
+    # there means both "nobody has looked at this yet" and "a human looked
+    # and rejected it", so a rejected gap would sit in the review queue for
+    # ever. These three columns record who decided what, and when:
+    #   "pending"       - below the confidence threshold, awaiting a human
+    #   "auto_approved" - at/above the threshold. F4 only requires that
+    #                     *low* confidence items be held, so these pass
+    #                     straight through, exactly as before this existed
+    #   "approved"      - a human confirmed it (sets reviewed -> True)
+    #   "rejected"      - a human rejected it (reviewed stays False, and it
+    #                     leaves the queue instead of being offered again)
+    review_status: Mapped[str] = mapped_column(String(20), default="pending")
+    # Who decided, as the server authenticated them - a role label or staff
+    # identifier, never a value supplied by the client (N6). Null while no
+    # human has touched the row.
+    reviewed_by: Mapped[str | None] = mapped_column(String(64), default=None)
+    reviewed_at: Mapped[dt.datetime | None] = mapped_column(DateTime, default=None)
     # F7: "recommend a study method from a fixed table ... according to the
     # type of gap". Populated by src.model.silo_mapping from the verb of the
     # learning outcome the gap maps to (see that module's GAP_TYPE_METHODS

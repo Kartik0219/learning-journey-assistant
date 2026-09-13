@@ -44,6 +44,7 @@ from src.db.models import Student
 from src.deliver.ai_insight_api import get_ai_insight
 from src.deliver.coordinator_api import get_coordinator_report
 from src.deliver.dashboard_api import get_student_dashboard, get_student_resources
+from src.deliver.review_api import ReviewError, get_review_queue, review_gap
 from src.estimate.mastery import record_engagement
 from src.security.audit import log_event
 from src.security.authentication import (
@@ -295,6 +296,53 @@ def create_app() -> Flask:
                 abort(403)
 
             return render_template("coordinator.html", report=report, actor_role=actor.role.value)
+
+    @app.route("/review")
+    def review_queue():
+        """F4: the queue of low-confidence skill gaps held back from
+        students until a human checks them. Staff/Admin only (N6) - see
+        src.deliver.review_api."""
+        if "role" not in session:
+            return redirect(url_for("login"))
+
+        actor = Actor(role=Role(session["role"]), student_id=session.get("student_id"))
+
+        with get_session() as db_session:
+            try:
+                queue = get_review_queue(db_session, actor)
+            except AuthorizationError:
+                abort(403)
+
+            return render_template(
+                "review.html",
+                queue=queue,
+                actor_role=actor.role.value,
+                notice=request.args.get("notice"),
+            )
+
+    @app.route("/review/<int:gap_id>", methods=["POST"])
+    def review_decision(gap_id: int):
+        """F4/F5: record one approve/reject decision, optionally correcting
+        the gap's SILO link on the way through. The gap id comes from the
+        URL but authorisation is re-checked server-side inside review_gap -
+        a Student posting here directly gets 403, not a decision (N6)."""
+        if "role" not in session:
+            return redirect(url_for("login"))
+
+        actor = Actor(role=Role(session["role"]), student_id=session.get("student_id"))
+        decision = request.form.get("decision", "")
+        outcome_id = request.form.get("learning_outcome_id", type=int)
+
+        with get_session() as db_session:
+            try:
+                review_gap(db_session, actor, gap_id, decision, outcome_id)
+            except AuthorizationError:
+                abort(403)
+            except ReviewError:
+                abort(400)
+
+        verb = "approved" if decision == "approve" else "rejected"
+        return redirect(url_for("review_queue", notice=f"Gap #{gap_id} {verb}."))
 
     @app.route("/practice/<int:recommendation_id>", methods=["POST"])
     def practice(recommendation_id: int):
