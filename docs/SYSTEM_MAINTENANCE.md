@@ -193,6 +193,23 @@ tender committed to an explainable, no-hallucination, $0 approach.
 - With `LLM_PROVIDER` / `LLM_API_KEY` unset, `src/model/ai_analysis.py`
   raises `AIAnalysisUnavailable` and every caller falls back to TF-IDF.
   `/ai-insight` stays disabled.
+
+**Supported providers.** `analyze_student` dispatches on `LLM_PROVIDER`
+across `SUPPORTED_PROVIDERS`. Having two, not one, is the tender's
+Section 8 risk-7 mitigation in practice — no single vendor's cost,
+downtime or policy change can remove the LLM path, and switching is one
+environment variable with no caller change.
+
+| `LLM_PROVIDER` | Key from | Default model | Extra install | Cost |
+|---|---|---|---|---|
+| `gemini` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `gemini-flash-latest` | none — REST via `requests` | free tier |
+| `anthropic` | [console.anthropic.com](https://console.anthropic.com) | `claude-sonnet-4-5` | `pip install anthropic` | paid / trial credit |
+
+`gemini` is the recommended default for this project: it needs no extra
+dependency on the free-tier host and no spend, which is what the tender
+budgeted for (Section 7, "Free tier / trial credits (est. $0)").
+Credentials travel in the `x-goog-api-key` header, never in the URL, so
+they cannot surface in request logs (N3).
 - Feedback text is treated as **untrusted input (N5)** — it is fenced in
   `<untrusted_data>` tags and never interpreted as instructions. Keep
   that fencing if you touch the prompt.

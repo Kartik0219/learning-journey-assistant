@@ -1,15 +1,35 @@
 """Pytest fixtures shared across the test suite.
 
-Sets DATABASE_URL to a throwaway SQLite file *before* anything under
-src/ gets imported anywhere in the test session, so tests never touch a
-developer's real ljas_dev.db. This only works because conftest.py is
-guaranteed to be imported by pytest before test modules are collected -
-don't move this import order around.
+Pins the environment to a known-clean test configuration *before* anything
+under src/ gets imported anywhere in the test session, so tests never touch
+a developer's real ljas_dev.db or their real LLM credentials. This only
+works because conftest.py is guaranteed to be imported by pytest before
+test modules are collected - don't move this import order around.
+
+These are hard assignments, not `setdefault`. The suite must describe one
+fixed environment rather than inherit whatever a developer has exported or
+written into .env. Both failure modes have actually happened here: a real
+DATABASE_URL in the environment failed 54 tests, and a real LLM_PROVIDER in
+.env failed the "AI is disabled by default" tests. In both cases the code
+was correct and only the environment was contaminated - the worst kind of
+failure, because it looks like a bug. A test run must mean the same thing
+on every machine, including a marker's.
+
+The LLM vars are set to "" rather than deleted on purpose: src.config calls
+load_dotenv() at import with override=False, so a *present* variable stops
+.env supplying its own value, and config's `os.getenv(...) or None` then
+reads "" as unset. Deleting them would let .env repopulate them.
 """
 
 import os
 
-os.environ.setdefault("DATABASE_URL", "sqlite:///./ljas_test.db")
+os.environ["DATABASE_URL"] = "sqlite:///./ljas_test.db"
+
+# The LLM path is opt-in and off by default; the suite asserts that default
+# and stubs every provider call, so a developer's real key must never be
+# visible to it - nor spent by it.
+for _llm_var in ("LLM_PROVIDER", "LLM_API_KEY", "LLM_MODEL"):
+    os.environ[_llm_var] = ""
 
 import shutil  # noqa: E402
 from pathlib import Path  # noqa: E402
