@@ -31,9 +31,8 @@ services:
         sync: false
       - key: LOG_LEVEL
         value: INFO
-      # HISTORICAL_DATASET_PATH intentionally omitted - do not set it here.
-      # Setting it would point the pipeline at data/provided/, which isn't
-      # in this repo and shouldn't be: this service is sample-data only.
+      - key: HISTORICAL_DATASET_PATH
+        value: data/dataset/CSE_results_150_students_3_Subjects.xlsx
       #
       # --- Optional AI (LLM) path (IOG-37/39/52/53) --------------------------
       # The AI insight page (/ai-insight) is OFF unless a provider is set.
