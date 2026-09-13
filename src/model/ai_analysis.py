@@ -139,6 +139,15 @@ GEMINI_RETRY_STATUSES = (429, 500, 502, 503, 504)
 GEMINI_MAX_ATTEMPTS = 5
 GEMINI_BACKOFF_SECONDS = 1.5
 
+# 429 is different from 503: it means *this key* is over its request quota,
+# and every retry spends more of that same quota. Hammering five times in a
+# few seconds is what kept the live demo locked out, so a rate-limited call
+# gets one polite retry that waits as long as Gemini asks (its `retryDelay`,
+# capped so a page load never hangs), and a used-up *daily* quota - which no
+# wait inside a request can fix - fails immediately.
+GEMINI_RATE_LIMIT_ATTEMPTS = 2
+GEMINI_MAX_RATE_LIMIT_WAIT_SECONDS = 20.0
+
 # Providers `analyze_student` can dispatch to. Having more than one is the
 # tender's own Section 8 risk-7 mitigation made real ("Abstract the AI
 # provider behind an internal interface where practical"), so no single
@@ -160,6 +169,12 @@ class AIAnalysisError(RuntimeError):
 
 
 # --- The JSON contract the model must return (mirrors SYSTEM_PROMPT) -------
+
+
+class AIRateLimited(AIAnalysisError):
+    """The provider refused the call because this key is over its quota (HTTP
+    429). Separate from other failures so the page can say "busy, try again"
+    rather than implying something is broken."""
 
 
 class LearningOutcomeResult(BaseModel):
@@ -348,7 +363,11 @@ def _call_gemini(prompt: str, settings: Settings) -> str:
     }
 
     last_error: Exception | None = None
-    for attempt in range(1, GEMINI_MAX_ATTEMPTS + 1):
+    rate_limited = 0
+    attempt = 0
+    while True:
+        attempt += 1
+        wait = GEMINI_BACKOFF_SECONDS * (2 ** (attempt - 1))  # 1.5s, 3s, 6s, 12s
         try:
             response = requests.post(url, headers=headers, json=body, timeout=60)
         except Exception as exc:  # noqa: BLE001 - transport failure
@@ -361,19 +380,32 @@ def _call_gemini(prompt: str, settings: Settings) -> str:
                     response.raise_for_status()
                     payload = response.json()
                 except Exception as exc:  # noqa: BLE001
-                    raise AIAnalysisError(f"Gemini API call failed: {exc}") from exc
+                    raise AIAnalysisError(
+                        f"Gemini API call failed: {exc}{_gemini_error_detail(response)}"
+                    ) from exc
                 break
+
+            detail = _gemini_error_detail(response)
+            if response.status_code == 429:
+                rate_limited += 1
+                if _is_daily_quota_exhausted(response):
+                    raise AIRateLimited(
+                        f"Gemini daily free-tier quota is used up for this API key{detail}"
+                    )
+                if rate_limited >= GEMINI_RATE_LIMIT_ATTEMPTS:
+                    raise AIRateLimited(f"Gemini rate limit (HTTP 429){detail}")
+                wait = min(
+                    _gemini_retry_delay(response) or wait, GEMINI_MAX_RATE_LIMIT_WAIT_SECONDS
+                )
             last_error = RuntimeError(
-                f"HTTP {response.status_code} from Gemini (transient)"
+                f"HTTP {response.status_code} from Gemini (transient){detail}"
             )
 
-        if attempt < GEMINI_MAX_ATTEMPTS:
-            # Exponential backoff: 1.5s, 3s, 6s, 12s.
-            time.sleep(GEMINI_BACKOFF_SECONDS * (2 ** (attempt - 1)))
-    else:
-        raise AIAnalysisError(
-            f"Gemini API call failed after {GEMINI_MAX_ATTEMPTS} attempts: {last_error}"
-        ) from last_error
+        if attempt >= GEMINI_MAX_ATTEMPTS:
+            raise AIAnalysisError(
+                f"Gemini API call failed after {GEMINI_MAX_ATTEMPTS} attempts: {last_error}"
+            ) from last_error
+        time.sleep(wait)
 
     try:
         parts = payload["candidates"][0]["content"]["parts"]
@@ -384,6 +416,44 @@ def _call_gemini(prompt: str, settings: Settings) -> str:
         ) from exc
 
     return "".join(part.get("text", "") for part in parts)
+
+
+def _gemini_error_body(response) -> dict:
+    try:
+        body = response.json()
+    except Exception:  # noqa: BLE001 - non-JSON error page
+        return {}
+    error = body.get("error") if isinstance(body, dict) else None
+    return error if isinstance(error, dict) else {}
+
+
+def _gemini_error_detail(response) -> str:
+    """Gemini's own status/message, so a failure says *why* (e.g. which quota)
+    instead of a bare status code. Gemini never echoes the API key back."""
+    error = _gemini_error_body(response)
+    parts = [str(error.get(k)) for k in ("status", "message") if error.get(k)]
+    return f" - {': '.join(parts)[:300]}" if parts else ""
+
+
+def _gemini_retry_delay(response) -> float | None:
+    """Seconds Gemini asks us to wait (RetryInfo.retryDelay, e.g. "17s")."""
+    for detail in _gemini_error_body(response).get("details") or []:
+        delay = detail.get("retryDelay") if isinstance(detail, dict) else None
+        match = re.fullmatch(r"(\d+(?:\.\d+)?)s", str(delay or ""))
+        if match:
+            return float(match.group(1))
+    return None
+
+
+def _is_daily_quota_exhausted(response) -> bool:
+    """True when the violated quota is a per-day one - retrying within a page
+    load cannot succeed, so the caller should fail fast."""
+    for detail in _gemini_error_body(response).get("details") or []:
+        for violation in (detail.get("violations") or []) if isinstance(detail, dict) else []:
+            quota = f"{violation.get('quotaId', '')} {violation.get('quotaMetric', '')}"
+            if "PerDay" in quota:
+                return True
+    return False
 
 
 def parse_diagnostic_json(raw: str) -> DiagnosticResult:

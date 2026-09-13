@@ -324,3 +324,83 @@ def test_gemini_does_not_retry_permanent_failure(monkeypatch):
     with pytest.raises(AIAnalysisError):
         _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="bad"))
     assert len(calls) == 1
+
+
+# --- 429 rate limits: retry politely, never hammer the quota ---------------
+
+
+def _rate_limit_body(retry_delay="7s", quota_id="GenerateRequestsPerMinutePerProjectPerModel"):
+    return {
+        "error": {
+            "code": 429,
+            "status": "RESOURCE_EXHAUSTED",
+            "message": "You exceeded your current quota.",
+            "details": [
+                {"@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                 "violations": [{"quotaId": quota_id}]},
+                {"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": retry_delay},
+            ],
+        }
+    }
+
+
+def test_gemini_429_retries_once_after_gemini_requested_delay(monkeypatch):
+    """A per-minute 429 gets exactly one retry, after the delay Gemini asks
+    for - not five rapid retries that each spend more of the same quota."""
+    import requests
+
+    calls, sleeps = [], []
+
+    def limited_then_ok(*a, **kw):
+        calls.append(1)
+        if len(calls) == 1:
+            return _FakeResponse(_rate_limit_body("7s"), status=429)
+        return _FakeResponse(_gemini_ok_payload(_VALID_JSON))
+
+    monkeypatch.setattr(requests, "post", limited_then_ok)
+    monkeypatch.setattr(ai_analysis.time, "sleep", sleeps.append)
+
+    raw = _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="k"))
+    assert parse_diagnostic_json(raw).learningOutcomes[0].code == "SILO1"
+    assert len(calls) == 2
+    assert sleeps == [7.0]
+
+
+def test_gemini_persistent_429_stops_early_with_gemini_reason(monkeypatch):
+    import requests
+
+    calls, sleeps = [], []
+
+    def always_limited(*a, **kw):
+        calls.append(1)
+        return _FakeResponse(_rate_limit_body("600s"), status=429)
+
+    monkeypatch.setattr(requests, "post", always_limited)
+    monkeypatch.setattr(ai_analysis.time, "sleep", sleeps.append)
+
+    with pytest.raises(ai_analysis.AIRateLimited) as info:
+        _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="secret-key-123"))
+    assert len(calls) == ai_analysis.GEMINI_RATE_LIMIT_ATTEMPTS
+    # Capped: a page load must never hang for Gemini's full 600s ask.
+    assert sleeps == [ai_analysis.GEMINI_MAX_RATE_LIMIT_WAIT_SECONDS]
+    # The error explains *why* (Gemini's own reason) and never leaks the key.
+    assert "RESOURCE_EXHAUSTED" in str(info.value)
+    assert "secret-key-123" not in str(info.value)
+
+
+def test_gemini_daily_quota_exhausted_fails_immediately(monkeypatch):
+    import requests
+
+    calls = []
+
+    def daily_quota(*a, **kw):
+        calls.append(1)
+        return _FakeResponse(_rate_limit_body(quota_id="GenerateRequestsPerDayPerProjectPerModel"),
+                             status=429)
+
+    monkeypatch.setattr(requests, "post", daily_quota)
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda _s: None)
+
+    with pytest.raises(ai_analysis.AIRateLimited, match="daily"):
+        _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="k"))
+    assert len(calls) == 1
