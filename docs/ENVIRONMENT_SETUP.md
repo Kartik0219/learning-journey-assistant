@@ -48,19 +48,20 @@ Estimate touch it).
 ## Running against the real provided dataset (IOG-33)
 
 By default the pipeline runs against the synthetic sample CSVs above -
-nothing extra to configure. To run it against the real provided
+nothing extra to configure. To run it against the subject's anonymised
 `CSE_results_150_students_3_Subjects.xlsx` workbook instead (150
-students, 3 subjects, 1,650 assessment results):
+students, 3 subjects, 1,650 assessment results) - the same data the live
+demo uses:
 
 ```bash
-# Real student records must never be committed (N3) - data/provided/ is
-# gitignored. Put the file there yourself; it isn't in the repo.
-mkdir -p data/provided
-cp /path/to/CSE_results_150_students_3_Subjects.xlsx data/provided/
-
-export HISTORICAL_DATASET_PATH=data/provided/CSE_results_150_students_3_Subjects.xlsx
-python -m src.pipeline
+# The workbook is in the repo at data/dataset/ - the subject coordinator
+# approved publishing it in this repository and on the live demo (13 Sep 2026).
+export HISTORICAL_DATASET_PATH=data/dataset/CSE_results_150_students_3_Subjects.xlsx
+python -m src.pipeline       # about 2 minutes
 ```
+
+`data/provided/` stays gitignored for any data that is *not* approved for
+publication.
 
 `src.parse.cleaners.run_parse_stage()` picks `src.connect.excel_loader`
 over the synthetic-CSV loader automatically whenever
@@ -70,13 +71,10 @@ Moodle) - nothing else needs to change. Skill-gap extraction
 workbook's explicit SILO tags and score-band severity instead of the
 feedback-text heuristic - see `docs/DATA_DICTIONARY.md`'s
 `assessment_results` / `skill_gaps` sections for the full field-level
-detail. At full scale this currently extracts ~3,600 skill gaps across
-the 1,650 results, all mapped to a learning outcome.
-
-**Open:** whether this xlsx is tutor-issued or team-generated is not
-yet confirmed (Ge Su, IOG-33) - see that ticket's comments. Not
-blocking on it, but it needs to be stated accurately in the final
-report once confirmed.
+detail. At full scale this extracts 3,607 skill gaps across the 1,650
+results, all mapped to a learning outcome, and 1,950 mastery scores. Each
+outcome's mastery is the weight-averaged score of the results tagged with
+it, using the workbook's `Weight` column.
 
 ## Running the dashboard
 
@@ -98,11 +96,14 @@ Seeded automatically by `seed_demo_credentials` every time the pipeline's
 Parse stage runs (`src.parse.cleaners`), idempotently - re-running the
 pipeline never resets a password you've since changed.
 
-| Role | Identifier | Password |
+| Dataset | Student number | Password |
 |---|---|---|
-| Student | their student number, e.g. `DEMO0001` | same as the student number, e.g. `DEMO0001` |
-| Staff | `staff` | `staff123` |
-| Admin | `admin` | `admin123` |
+| Sample CSVs (default) | `DEMO0001` … `DEMO0018` | same as the student number |
+| 150-student workbook (live demo) | `STU0001` … `STU0150` | same as the student number |
+
+The app is **student-only**: the Staff and Admin roles, the coordinator
+report and the skill-gap review queue were removed on 13 Sep 2026 at the
+team's request.
 
 Fixed and documented on purpose - this remains an academic
 demonstration with no self-service sign-up, not a claim of
@@ -110,9 +111,6 @@ production-grade credential management. The *mechanism* is real: a
 wrong password is genuinely rejected (`src.security.authentication.
 AuthenticationError`), and every sign-in attempt (success or failure) is
 audit-logged (`sign_in` / `sign_in_failed`, N4).
-
-Staff/Admin also get a **Coordinator report** link in the header once
-logged in — see "New in the app-build phase" below.
 
 ## New in the app-build phase
 
@@ -134,18 +132,15 @@ Flask/TF-IDF stack is unchanged, no new database engine, no LLM:
   have hallucinated. Runs as part of `run_estimate_stage` in the
   pipeline; shown under "Practice quiz" on each outcome's dashboard
   card.
-- **Coordinator report** (`src.deliver.coordinator_api`, `/coordinator`
-  route, IOG-46, Ge Su) — a Staff/Admin-only cohort-level view:
-  per-subject/per-SILO average mastery and gap-severity counts, plus an
-  "at-risk" student list (average mastery below 50%). Every aggregate
-  excludes students without active consent, the same N2 gate the rest
-  of the pipeline already enforces — not a new consent bypass for
-  reporting.
+- **Coordinator report** (IOG-46, Ge Su) — a Staff/Admin cohort-level
+  view of per-SILO mastery and an at-risk list. Built and tested in this
+  phase, then **removed on 13 Sep 2026** when the team made the app
+  student-only.
 - **Dashboard frontend polish** (IOG-45, Anjan) — a per-subject mastery
   overview strip above the per-SILO detail (useful once a student spans
   more than one subject, as the real dataset's students do),
   mobile-responsive layout (`base.html`'s new media query), and styled
-  form inputs across login/dashboard/coordinator.
+  form inputs across the login and student pages.
 - **Integration, regression testing, docs and GitHub/Jira upkeep**
   (IOG-49, Kartik) — wiring the four features above together, running
   the full test suite against them, keeping this document and the
@@ -175,9 +170,9 @@ ruff check .
 | Parse | Working - validates + upserts subjects, learning outcomes, rubric criteria, students, assessment results, topic materials; seeds demo consent; picks the sample or real-dataset loader per `HISTORICAL_DATASET_PATH` | IOG-34 |
 | Model (skill-gap extraction, SILO mapping) | Working - two extraction paths (explicit SILO tags + score-band severity for the real dataset; the original TF-IDF/keyword heuristic for the sample dataset, unchanged), see `src/model/silo_mapping.py`'s docstring | IOG-37, IOG-38 |
 | Estimate (mastery scoring, study recommendations, quiz generation, engagement) | Working - explainable weighted scoring, fixed-table study method (F7), grounded study material (F8/F9), TF-IDF-grounded quiz questions (`src/estimate/quiz.py`, F8), engagement feedback (F11) | IOG-38, IOG-39, IOG-48 (Prabhashi) |
-| Deliver (dashboard, coordinator report) | Working - real Flask app (`python -m src.deliver.app`) showing mastery, gaps, quiz questions, and recommendations per student, plus a Staff/Admin coordinator cohort report (`/coordinator`), behind the real IOG-42 security checks | IOG-40, IOG-46 (Ge Su) |
+| Deliver (student pages) | Working - real Flask app (`python -m src.deliver.app`) showing each student's mastery, results, study plan, quiz questions, resources and optional AI insight, behind the real IOG-42 security checks. Student-only since 13 Sep 2026 (the coordinator report and review queue were removed) | IOG-40, IOG-46 (Ge Su) |
 | Security (encryption, RBAC, audit log, consent, authentication) | Implemented as reusable primitives in `src/security/`, wired end-to-end through the dashboard/Estimate stage above; real password authentication (`src/security/authentication.py`) replaced the old demo picker | IOG-42, IOG-47 (Farshad) |
-| Frontend polish (dashboard/login/coordinator styling, responsive layout, per-subject overview) | Working - see `src/deliver/templates/` | IOG-45 (Anjan) |
+| Frontend polish (dashboard/login styling, responsive layout, per-subject overview) | Working - see `src/deliver/templates/` | IOG-45 (Anjan) |
 | Integration, regression testing, docs, GitHub/Jira upkeep | Working - full test suite passing across all app-build features, docs cross-checked, tickets/board kept current | IOG-49 (Kartik) |
 
 Run `python -m src.pipeline` to execute Connect through Estimate in one

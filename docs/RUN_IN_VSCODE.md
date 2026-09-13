@@ -130,27 +130,26 @@ To stop the app, click in the terminal and press `Ctrl+C`.
 
 ## 6. Optional: use the 150-student dataset
 
-If you have `CSE_results_150_students_3_Subjects.xlsx`:
+The live demo runs on the subject's anonymised 150-student workbook, and it
+is already in the project at `data/dataset/CSE_results_150_students_3_Subjects.xlsx`.
+To run your local copy on it, set the path in the `(.venv)` terminal and
+rebuild with a separate database:
 
-1. Put it in the project's `data/provided/` folder (create the folder if needed).
-   That folder is ignored by Git, so it can't be committed by accident.
-2. In the `(.venv)` terminal, set the path and rebuild with a separate database:
+**Windows (PowerShell):**
+```powershell
+$env:HISTORICAL_DATASET_PATH = "data/dataset/CSE_results_150_students_3_Subjects.xlsx"
+$env:DATABASE_URL = "sqlite:///./ljas_real.db"
+python -m src.pipeline
+python -m src.deliver.app
+```
 
-   **Windows (PowerShell):**
-   ```powershell
-   $env:HISTORICAL_DATASET_PATH = "data/provided/CSE_results_150_students_3_Subjects.xlsx"
-   $env:DATABASE_URL = "sqlite:///./ljas_real.db"
-   python -m src.pipeline
-   python -m src.deliver.app
-   ```
-
-   **Mac / Linux:**
-   ```bash
-   export HISTORICAL_DATASET_PATH=data/provided/CSE_results_150_students_3_Subjects.xlsx
-   export DATABASE_URL=sqlite:///./ljas_real.db
-   python -m src.pipeline
-   python -m src.deliver.app
-   ```
+**Mac / Linux:**
+```bash
+export HISTORICAL_DATASET_PATH=data/dataset/CSE_results_150_students_3_Subjects.xlsx
+export DATABASE_URL=sqlite:///./ljas_real.db
+python -m src.pipeline
+python -m src.deliver.app
+```
 
 The pipeline takes about 2 minutes on this dataset. Sign in as any student
 from **`STU0001` to `STU0150`**, using the student number as the password

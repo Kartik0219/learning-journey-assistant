@@ -8,7 +8,7 @@ AI-powered formative learning assistant that turns LMS assessment data — marks
 
 **[https://learning-journey-assistant.onrender.com](https://learning-journey-assistant.onrender.com)**
 
-Deployed on Render's free tier, so the instance spins down after inactivity — the first request can take 50+ seconds to respond. Demo sign-in accounts and passwords are documented in `docs/ENVIRONMENT_SETUP.md`. This demo runs only against the bundled synthetic sample dataset (see `render.yaml`), never real student data.
+Deployed on Render's free tier, so the instance spins down after inactivity — the first request can take 50+ seconds to respond. Sign in as **STU0001 / STU0001** (any student number from STU0001 to STU0150 — the password is the student number). The demo runs on the subject's anonymised 150-student dataset (`data/dataset/`), approved for publication by the subject coordinator. The app is student-only.
 
 ## Overview
 
@@ -29,9 +29,8 @@ Valuable academic data currently sits isolated in the LMS (Moodle), leaving stud
 - **Formative Notice** — a clear, persistent disclaimer that diagnostic scores are coaching tools and do not alter official instructor grades.
 - **Adaptive Practice Quizzes** — generated against the student's weakest outcomes.
 
-### Instructor / Data-Input View
-- Form-based submission of student assignment feedback, rubric scores, and course Learning Outcomes to trigger the AI diagnostic pipeline.
-- Review and confirmation of low-confidence diagnostic items before they reach the student view.
+### Results
+- **Every assessment in one place** — each subject's assessments with type, score, marker feedback, the SILOs covered, weight and weighted score, plus the subject's weighted total.
 
 ### AI Diagnostic Engine
 - LLM processing pipeline with a **structured system prompt** and **strict JSON schema enforcement** — malformed output is rejected and retried, never rendered.
@@ -68,7 +67,7 @@ python -m src.deliver.app       # then open http://127.0.0.1:5000  (DEMO0001 / D
 | Document | For |
 |---|---|
 | [Run in VS Code](docs/RUN_IN_VSCODE.md) | Step-by-step: download and run the app on your own computer |
-| [User Guide](docs/USER_GUIDE.md) | Students and teaching staff using the app |
+| [User Guide](docs/USER_GUIDE.md) | Students using the app |
 | [System Maintenance](docs/SYSTEM_MAINTENANCE.md) | Architecture, deployment, operations, troubleshooting, known limitations |
 | [Environment Setup](docs/ENVIRONMENT_SETUP.md) | Running it locally for the first time |
 | [Data Dictionary](docs/DATA_DICTIONARY.md) | Field-by-field data definitions |
