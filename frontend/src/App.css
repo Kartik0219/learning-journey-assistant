@@ -10,7 +10,8 @@
 .brand-mark { align-items: center; background: var(--brand); border-radius: 7px; color: #fff; display: flex; height: 30px; justify-content: center; width: 30px; }
 .brand-name { font: 700 17px/1.15 var(--serif); }
 .topbar-user { align-items: center; display: flex; gap: 12px; margin-left: auto; }
-.student-pill { align-items: center; background: var(--charcoal-2); border: 1px solid rgba(255,255,255,.16); border-radius: 999px; color: #fff; display: inline-flex; font-size: 13px; font-weight: 600; gap: 6px; padding: 5px 12px; }
+.student-pill { align-items: center; background: var(--charcoal-2); border: 1px solid rgba(255,255,255,.16); border-radius: 999px; color: #fff; display: inline-flex; font-size: 13px; font-weight: 600; gap: 7px; padding: 4px 12px 4px 5px; }
+.avatar { border-radius: 6px; display: block; flex: none; }
 .logout-btn { align-items: center; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; color: #fff; display: inline-flex; font-size: 13px; font-weight: 600; gap: 7px; padding: 7px 12px; text-decoration: none; transition: background .15s ease; }
 .logout-btn:hover { background: rgba(255,255,255,.12); }
 .menu-toggle { display: none; }
