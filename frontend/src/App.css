@@ -134,6 +134,34 @@
 .chip.muted { background: #ECE9E9; color: var(--muted); }
 .curated-note { background: #FFF7E8; border: 1px solid #F1D9A6; border-radius: 8px; color: var(--ink); font-size: 13.5px; line-height: 1.5; margin: 0 0 16px; padding: 10px 14px; }
 
+/* Sub-tabs under Study and Insight */
+.subnav { display: flex; gap: 4px; margin: 18px auto 0; max-width: 1200px; padding: 0 24px; }
+.subnav-item { border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font: 600 13px var(--sans); padding: 6px 14px; text-decoration: none; }
+.subnav-item:hover { color: var(--ink); border-color: var(--line-strong); }
+.subnav-item.active { background: var(--charcoal); border-color: var(--charcoal); color: #fff; }
+.subnav + .page { padding-top: 14px; }
+
+/* Today strip on the dashboard */
+.today { align-items: center; background: var(--charcoal); border-left: 5px solid var(--brand); border-radius: 12px; color: #fff; display: flex; flex-wrap: wrap; gap: 16px 24px; justify-content: space-between; margin-bottom: 16px; padding: 18px 22px; }
+.today.tone-developing { border-left-color: var(--dev); }
+.today.tone-proficient { border-left-color: var(--prof); }
+.today.tone-mastered { border-left-color: var(--mast); }
+.today .eyebrow { color: #FF9AA7; }
+.today-main { display: grid; gap: 6px; flex: 1 1 420px; min-width: 0; }
+/* Beats the page's dark heading/strong colours (.page h2 is more specific than a bare class). */
+.page .today .today-line, .page .today .today-line strong { color: #fff; }
+.today-line { font: 700 24px/1.25 var(--serif); margin: 0; text-wrap: balance; }
+.page .today .today-line .title-subject { color: #FF9AA7; }
+.today-sub { color: rgba(255,255,255,.8); font-size: 14px; margin: 0; }
+.page .today .today-sub strong { color: #fff; }
+.today-step { align-items: start; color: rgba(255,255,255,.92); display: grid; font-size: 14px; gap: 10px; grid-template-columns: 26px 1fr; margin: 4px 0 0; }
+.today-step .step-n { background: var(--brand); }
+.today-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.today-actions .btn { text-decoration: none; }
+.today-actions .btn.ghost { background: transparent; border-color: rgba(255,255,255,.35); color: #fff; }
+.today-actions .btn.ghost:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.6); }
+@media (max-width: 720px) { .today-line { font-size: 20px; } .today-actions { width: 100%; } .today-actions .btn { flex: 1; justify-content: center; } }
+
 /* Insight */
 .callout { align-items: center; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--charcoal); border-radius: 10px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin-bottom: 18px; padding: 16px 18px; }
 .callout.tone-atRisk { border-left-color: var(--risk); }

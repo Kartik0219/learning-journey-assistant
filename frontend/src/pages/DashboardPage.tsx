@@ -17,6 +17,7 @@ import { Dropdown } from '../Dropdown'
 import { useStudent } from '../studentContext'
 import { useApi } from '../useApi'
 import { PageError } from './PageError'
+import { TodayStrip } from './TodayStrip'
 import { TrendChart } from './TrendChart'
 
 const FOCUS_THRESHOLD = 65
@@ -148,6 +149,8 @@ export function DashboardPage() {
         </div>
         {subjectCodes.length > 1 && <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={subjectCodes.map((code) => ({ value: code, label: code }))} onChange={setSubjectCode} />}
       </header>
+
+      <TodayStrip />
 
       <section className="stats" aria-label="Subject summary">
         <article className="stat">

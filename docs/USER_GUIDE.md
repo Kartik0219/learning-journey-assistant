@@ -58,7 +58,10 @@ Use **Log out** in the top-right when you are finished.
 
 Once signed in you land on the **Dashboard**. The navigation across the
 top (or the menu button on a phone) gives you six places to go:
-Dashboard, Results, Study plan, Quizzes, Resources, Insight and What if?.
+Dashboard, Results, Study and Insight. Study has three sections — Plan,
+Quizzes and Resources — and Insight has two — Where I stand and What if?.
+The Dashboard opens with a **Today** strip: the subject closest to its next
+grade band, the assessment that moves it most, and the first step to take.
 
 ### 3.1 Dashboard — where you stand
 
