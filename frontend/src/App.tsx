@@ -8,10 +8,10 @@ import {
   Menu,
   Sparkles,
   TableProperties,
-  UserRound,
   X,
 } from 'lucide-react'
 import { useState } from 'react'
+import { Avatar } from './Avatar'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { AiInsightPage } from './pages/AiInsightPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -45,7 +45,7 @@ function AppShell() {
             <span className="brand-name">Learning Journey Assistant</span>
           </NavLink>
           <div className="topbar-user">
-            <span className="student-pill"><UserRound size={14} aria-hidden="true" /> {studentLabel}</span>
+            <span className="student-pill"><Avatar seed={studentLabel} /> {studentLabel}</span>
             {/* Real sign-out: clears the Flask session server-side. */}
             <a className="logout-btn" href="/logout"><LogOut size={15} aria-hidden="true" /> Log out</a>
           </div>
