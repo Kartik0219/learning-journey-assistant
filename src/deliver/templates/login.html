@@ -1,30 +1,53 @@
-{% extends "base.html" %}
-{% block title %}Log in — Learning Journey Assistant{% endblock %}
-{% block content %}
-  <div class="auth-shell">
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in — Learning Journey Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#1A1A1A; --text:#333; --muted:#6B6767; --line:#E3E0E0; --ground:#F5F4F4; --brand:#E2001A; --brand-dark:#B80015; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--ground); color: var(--text); font: 15px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif; }
+    header { background: var(--ink); color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 10px; font: 700 17px "Source Serif 4", Georgia, serif; }
+    header i { width: 28px; height: 28px; border-radius: 7px; background: var(--brand); display: inline-block; }
+    main { display: grid; place-items: center; padding: 32px 16px; }
+    .card { width: 100%; max-width: 420px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 30px 28px; box-shadow: 0 10px 30px rgba(26,26,26,.07); }
+    .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); margin: 0 0 4px; }
+    h1 { font: 700 28px/1.15 "Source Serif 4", Georgia, serif; color: var(--ink); margin: 0 0 6px; }
+    p.lead { margin: 0 0 22px; color: var(--muted); }
+    label { display: block; font-weight: 700; color: var(--ink); font-size: 14px; margin: 0 0 6px; }
+    input { width: 100%; font: inherit; padding: 11px 13px; border: 1px solid #D6D1D1; border-radius: 8px; margin-bottom: 16px; color: var(--ink); }
+    input:focus { outline: 2px solid var(--brand); outline-offset: 1px; border-color: var(--brand); }
+    button { width: 100%; font-family: inherit; font-size: 15px; font-weight: 700; padding: 12px; border: 0; border-radius: 8px; background: var(--brand); color: #fff; cursor: pointer; }
+    button:hover { background: var(--brand-dark); }
+    button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+    .error { background: #F6E3E7; color: #9E1B32; border-radius: 8px; padding: 9px 12px; margin: 0 0 16px; font-weight: 600; font-size: 14px; }
+    .demo { margin: 18px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+    code { background: #F3F1F1; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; color: var(--ink); }
+    .formative { margin: 14px 0 0; font-size: 12.5px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+  <header><i aria-hidden="true"></i>Learning Journey Assistant</header>
+  <main>
     <div class="card">
+      <p class="eyebrow">Student sign-in</p>
       <h1>Log in</h1>
-      <p class="muted">Sign in with your student number to view your learning journey.</p>
-
+      <p class="lead">Sign in with your student number to see your learning journey.</p>
       <form method="post">
-        <div style="margin: 16px 0 10px;">
-          <label for="student_number">Student number</label><br>
-          <input type="text" id="student_number" name="student_number" autocomplete="username" style="width:100%;">
-        </div>
-        <div style="margin-bottom:14px;">
-          <label for="password">Password</label><br>
-          <input type="password" id="password" name="password" autocomplete="current-password" style="width:100%;">
-        </div>
-
+        <label for="student_number">Student number</label>
+        <input type="text" id="student_number" name="student_number" autocomplete="username" autofocus>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password">
         {% if error %}<p class="error">{{ error }}</p>{% endif %}
-
-        <button class="primary" type="submit" style="width:100%;">Log in</button>
+        <button type="submit">Log in</button>
       </form>
-
-      <p class="muted" style="margin-top:16px; font-size:0.8rem; text-align:center;">
-        Demo: student <code>STU0001</code> / <code>STU0001</code>
-        (any student number up to <code>STU0150</code> — the password is the student number)
-      </p>
+      <p class="demo">Demo: <code>STU0001</code> / <code>STU0001</code> — any student number up to <code>STU0150</code>; the password is the student number.</p>
+      <p class="formative">Formative only — nothing here changes an official grade.</p>
     </div>
-  </div>
-{% endblock %}
+  </main>
+</body>
+</html>

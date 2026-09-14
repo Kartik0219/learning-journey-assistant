@@ -1,5 +1,41 @@
-:root { font-family: "Trebuchet MS", "Segoe UI", sans-serif; color: #20263d; background: #f1f4fb; font-synthesis: none; text-rendering: optimizeLegibility; }
+/* La Trobe palette: charcoal + La Trobe red on warm neutrals. Mastery bands
+   are semantic colours and deliberately avoid the brand red. */
+:root {
+  --ground: #F5F4F4;
+  --surface: #FFFFFF;
+  --ink: #1A1A1A;
+  --text: #333333;
+  --muted: #6B6767;
+  --line: #E3E0E0;
+  --line-strong: #D6D1D1;
+  --charcoal: #1A1A1A;
+  --charcoal-2: #2E2E2E;
+  --brand: #E2001A;
+  --brand-dark: #B80015;
+  --brand-soft: #FDE8EA;
+  --risk: #9E1B32;
+  --risk-soft: #F6E3E7;
+  --dev: #C98A0B;
+  --dev-ink: #94650A;
+  --dev-soft: #FBF1DC;
+  --prof: #4E9A63;
+  --prof-ink: #3A7A4C;
+  --prof-soft: #E5F2E9;
+  --mast: #1F7A5C;
+  --mast-soft: #E3F1EB;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--ground);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
-button, select { font: inherit; }
-button:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid #00a38c; outline-offset: 2px; }
+body { margin: 0; min-width: 320px; background: var(--ground); font-size: 15px; line-height: 1.5; }
+button, select, textarea, input { font: inherit; }
+button:focus-visible, select:focus-visible, a:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

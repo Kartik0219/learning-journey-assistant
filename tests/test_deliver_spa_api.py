@@ -130,3 +130,23 @@ def test_login_next_returns_to_the_spa_but_never_off_site(client):
         data={"role": "student", "student_number": "DEMO0001", "password": "DEMO0001"},
     )
     assert "evil.example" not in response.headers["Location"]
+
+
+def test_login_without_next_lands_in_the_student_app(client):
+    """The React student app is the main app once its bundle is built."""
+    response = client.post("/login", data={"student_number": "DEMO0001", "password": "DEMO0001"})
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/app/")
+    assert client.get("/", follow_redirects=False).headers["Location"].endswith("/app/")
+
+
+def test_ai_insight_endpoint_is_off_without_a_provider_and_guards_access(client):
+    assert client.get("/api/students/1/ai-insight").status_code == 401
+
+    _login_student(client)
+    own = client.get(f"/api/students/{_id_of('DEMO0001')}/ai-insight")
+    assert own.status_code == 200
+    assert own.get_json()["enabled"] is False
+
+    other = client.get(f"/api/students/{_id_of('DEMO0002')}/ai-insight")
+    assert other.status_code == 403

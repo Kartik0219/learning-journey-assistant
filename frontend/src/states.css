@@ -1,74 +1,13 @@
-/* Loading / error / empty states and the small pieces added when the SPA
-   moved from fixtures to the live API. */
+/* Loading / error / empty states. */
 .page-status {
   max-width: 720px;
   margin: 48px auto;
   padding: 18px 22px;
-  border-radius: 12px;
-  background: #f4f6fb;
-  color: #3d4459;
-  font-weight: 500;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
   text-align: center;
 }
-
-.page-status--error {
-  background: #fdecee;
-  color: #9b1c2c;
-}
-
-.topbar-student {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  color: #e6eaf5;
-}
-
-/* Buttons that sit on white cards (the top-bar .logout-btn is styled for
-   the dark header and disappears here). */
-.plan-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 10px 10px 0 0;
-  padding: 8px 14px;
-  border: 1px solid #1f2a5c;
-  border-radius: 8px;
-  background: #1f2a5c;
-  color: #ffffff;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.plan-btn--ghost {
-  background: #ffffff;
-  color: #1f2a5c;
-}
-
-.plan-card .evidence-meta,
-.plan-card .evidence-block > p {
-  color: #5a6178;
-  opacity: 1;
-}
-
-.material-text {
-  line-height: 1.6;
-  color: #3d4459;
-  white-space: pre-line;
-}
-
-.plan-card {
-  margin: 0 0 18px;
-}
-
-.plan-card .status {
-  margin-left: 8px;
-  font-size: 0.75rem;
-  vertical-align: middle;
-}
-
-.plan-card button[disabled] {
-  opacity: 0.65;
-  cursor: default;
-}
+.page-status--error { background: var(--risk-soft); border-color: #E9C3CB; color: var(--risk); }
