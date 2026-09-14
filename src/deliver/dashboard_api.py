@@ -18,6 +18,8 @@ own, there is no need to catch and re-wrap them here.
 
 from __future__ import annotations
 
+import re
+
 from sqlalchemy.orm import Session
 
 from src.connect.excel_loader import parse_silo_tags
@@ -25,6 +27,8 @@ from src.db.models import LearningOutcome, MasteryScore, Student, StudyRecommend
 from src.estimate.quiz import latest_quiz_questions
 from src.security.authorization import Actor, require_student_access
 from src.security.consent import ensure_consent_active
+
+_SILO_NUMBER = re.compile(r"SILO(\d+)", re.IGNORECASE)
 
 def _latest_recommendation(
     session: Session, student_id: int, learning_outcome_id: int
@@ -201,23 +205,42 @@ def get_student_resources(session: Session, actor: Actor, student_id: int) -> di
                     "learning_outcome_code": (
                         material.learning_outcome.code if material.learning_outcome else None
                     ),
+                    "learning_outcome_description": (
+                        material.learning_outcome.description if material.learning_outcome else None
+                    ),
                     "source_url": material.source_url,
                     "provenance": material.provenance,
                     "mastery_pct": round(score * 100) if score is not None else None,
                 }
             )
 
-    def _weakest_first(item: dict) -> tuple[int, float, str]:
-        # Tagged outcomes with a mastery score first (lowest first), then
-        # untagged subject-wide material; title breaks ties predictably.
-        pct = item["mastery_pct"]
-        return (0 if pct is not None else 1, pct if pct is not None else 0.0, item["title"])
+    def _silo_key(item: dict) -> str:
+        return item["learning_outcome_code"] or "General"
 
-    subjects = [
-        {"code": code, "materials": sorted(items, key=_weakest_first)}
-        for code, items in by_subject.items()
-    ]
-    subjects.sort(key=lambda s: min((m["mastery_pct"] for m in s["materials"] if m["mastery_pct"] is not None), default=101))
+    def _natural_silo_order(code: str) -> tuple[int, str]:
+        # "SILO1" < "SILO2" < ... < "SILO10" (not "SILO1" < "SILO10" < "SILO2"),
+        # "General" (untagged material) always last.
+        match = _SILO_NUMBER.match(code)
+        return (int(match.group(1)), code) if match else (10_000, code)
+
+    subjects = []
+    for code, items in by_subject.items():
+        by_silo: dict[str, list[dict]] = {}
+        for item in items:
+            by_silo.setdefault(_silo_key(item), []).append(item)
+        silos = [
+            {
+                "code": silo_code,
+                "description": next((m["learning_outcome_description"] for m in silo_items if m["learning_outcome_description"] is not None), None),
+                "mastery_pct": next((m["mastery_pct"] for m in silo_items if m["mastery_pct"] is not None), None),
+                "materials": silo_items,
+            }
+            for silo_code, silo_items in by_silo.items()
+        ]
+        silos.sort(key=lambda s: _natural_silo_order(s["code"]))
+        subjects.append({"code": code, "silos": silos})
+
+    subjects.sort(key=lambda s: s["code"])
 
     return {
         "student": {"id": student.id, "display_name": student.display_name},

@@ -127,6 +127,10 @@
 .material p { margin: 0; white-space: pre-line; }
 .material-title { color: var(--ink); font-weight: 700; margin-bottom: 4px !important; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .materials { display: grid; gap: 10px; }
+.materials-group { margin-top: 14px; }
+.materials-group:first-of-type { margin-top: 10px; }
+.silo-heading { display: flex; align-items: center; gap: 8px; font: 700 13px var(--sans); color: var(--muted); margin: 0 0 8px !important; text-transform: uppercase; letter-spacing: .04em; }
+.silo-description { margin: -4px 0 8px !important; }
 .material-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
 .material.resource.focus { border-left: 3px solid var(--brand); }
 .material-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; color: var(--brand); font: 600 13px var(--sans); text-decoration: none; }

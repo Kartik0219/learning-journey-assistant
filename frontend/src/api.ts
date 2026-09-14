@@ -86,9 +86,16 @@ export interface Material {
   mastery_pct: number | null
 }
 
+export interface ResourceSilo {
+  code: string
+  description: string | null
+  mastery_pct: number | null
+  materials: Material[]
+}
+
 export interface Resources {
   student: { id: number; display_name: string }
-  subjects: { code: string; materials: Material[] }[]
+  subjects: { code: string; silos: ResourceSilo[] }[]
 }
 
 export interface LibraryMaterial {

@@ -7,16 +7,11 @@ import { useApi } from '../useApi'
 import { PageError } from './PageError'
 
 function MaterialCard({ m }: { m: Material }) {
-  const band = m.mastery_pct !== null ? masteryBand(m.mastery_pct) : null
   const focus = m.mastery_pct !== null && m.mastery_pct < 65
   return (
     <article className={`material resource${focus ? ' focus' : ''}`}>
       <div className="material-head">
-        <p className="material-title">
-          {m.title}
-          {m.learning_outcome_code && <span className="silo-tag">{m.learning_outcome_code}</span>}
-        </p>
-        {band && <span className={`chip ${band.status}`}>{m.mastery_pct}% · {band.label}</span>}
+        <p className="material-title">{m.title}</p>
       </div>
       <p>{m.passage_text}</p>
       {m.source_url && (
@@ -42,9 +37,8 @@ export function ResourcesPage() {
   const subjects = (data?.subjects ?? [])
     .filter((s) => !activeCode || s.code === activeCode)
     .sort((a, b) => a.code.localeCompare(b.code))
-  const total = subjects.reduce((n, s) => n + s.materials.length, 0)
-  const anyCurated = subjects.some((s) => s.materials.some((m) => m.provenance === 'curated'))
-  const focusCount = subjects.reduce((n, s) => n + s.materials.filter((m) => m.mastery_pct !== null && m.mastery_pct < 65).length, 0)
+  const total = subjects.reduce((n, s) => n + s.silos.reduce((m, silo) => m + silo.materials.length, 0), 0)
+  const anyCurated = subjects.some((s) => s.silos.some((silo) => silo.materials.some((m) => m.provenance === 'curated')))
 
   return (
     <main className="page" id="resources">
@@ -52,7 +46,7 @@ export function ResourcesPage() {
         <div>
           <p className="eyebrow">{studentLabel} · resources</p>
           <h1>What to read for each outcome</h1>
-          {total > 0 && <p className="sub">{total} resources across {subjects.length} subject{subjects.length === 1 ? '' : 's'}, ordered by where you need them most{focusCount ? ` — ${focusCount} sit under outcomes below 65%` : ''}.</p>}
+          {total > 0 && <p className="sub">{total} resources across {subjects.length} subject{subjects.length === 1 ? '' : 's'}.</p>}
         </div>
         {allSubjectCodes.length > 1 && <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={allSubjectCodes.map((code) => ({ value: code, label: code }))} onChange={setSubjectCode} />}
       </header>
@@ -71,11 +65,20 @@ export function ResourcesPage() {
         <section className="panel" key={subject.code}>
           <div className="panel-head">
             <h2>{subject.code}</h2>
-            <p className="sub">{subject.materials.length} resource{subject.materials.length === 1 ? '' : 's'} · weakest outcome first</p>
+            <p className="sub">{subject.silos.reduce((n, silo) => n + silo.materials.length, 0)} resource{subject.silos.reduce((n, silo) => n + silo.materials.length, 0) === 1 ? '' : 's'}</p>
           </div>
-          <div className="materials">
-            {subject.materials.map((m) => <MaterialCard m={m} key={m.title} />)}
-          </div>
+          {subject.silos.map((silo) => (
+            <div className="materials-group" key={silo.code}>
+              <h3 className="silo-heading">
+                {silo.code}
+                {silo.mastery_pct !== null && <span className={`chip ${masteryBand(silo.mastery_pct).status}`}>{silo.mastery_pct}% · {masteryBand(silo.mastery_pct).label}</span>}
+              </h3>
+              {silo.description && <p className="sub silo-description">{silo.description}</p>}
+              <div className="materials">
+                {silo.materials.map((m) => <MaterialCard m={m} key={m.title} />)}
+              </div>
+            </div>
+          ))}
         </section>
       ))}
       <footer className="footer-note">Links open in a new tab on the publisher's own site. The Learning Journey Assistant never generates study material — every item here is a real resource a person chose.</footer>
