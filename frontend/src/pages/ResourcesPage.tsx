@@ -32,14 +32,16 @@ export function ResourcesPage() {
   const { studentId, studentLabel } = useStudent()
   const { data, error, loading } = useApi(() => api.resources(studentId), studentId)
 
-  const allSubjectCodes = useMemo(() => data?.subjects.map((s) => s.code) ?? [], [data])
+  const allSubjectCodes = useMemo(() => (data?.subjects.map((s) => s.code) ?? []).sort(), [data])
   const [subjectCode, setSubjectCode] = useState('')
   const activeCode = allSubjectCodes.includes(subjectCode) ? subjectCode : allSubjectCodes[0]
 
   if (loading) return <p className="page-status">Loading resources…</p>
   if (error) return <PageError error={error} />
 
-  const subjects = (data?.subjects ?? []).filter((s) => !activeCode || s.code === activeCode)
+  const subjects = (data?.subjects ?? [])
+    .filter((s) => !activeCode || s.code === activeCode)
+    .sort((a, b) => a.code.localeCompare(b.code))
   const total = subjects.reduce((n, s) => n + s.materials.length, 0)
   const anyCurated = subjects.some((s) => s.materials.some((m) => m.provenance === 'curated'))
   const focusCount = subjects.reduce((n, s) => n + s.materials.filter((m) => m.mastery_pct !== null && m.mastery_pct < 65).length, 0)
