@@ -1,14 +1,29 @@
 /* La Trobe palette: charcoal + La Trobe red on warm neutrals. Mastery bands
-   are semantic colours and deliberately avoid the brand red. */
+   are semantic colours and deliberately avoid the brand red.
+
+   Theming: the complete light palette lives on bare :root. The dark set is
+   applied (a) automatically when the OS prefers dark and the student has not
+   chosen, and (b) explicitly via data-theme="dark" from the header toggle.
+   An explicit data-theme="light" beats a dark OS. Components only ever use
+   tokens, so nothing below the token blocks knows which theme is active. */
 :root {
+  color-scheme: light;
   --ground: #F5F4F4;
   --surface: #FFFFFF;
+  --surface-2: #F8F6F6;   /* subtle fills: material cards, hover rows */
+  --surface-3: #ECE9E9;   /* bar tracks, muted chips */
   --ink: #1A1A1A;
   --text: #333333;
   --muted: #6B6767;
   --line: #E3E0E0;
   --line-strong: #D6D1D1;
-  --charcoal: #1A1A1A;
+  --selected-line: #E7B9BF;
+  --banner-bg: #F0EEEE;
+  --banner-ink: #4A4646;
+  --note-bg: #FFF7E8;
+  --note-line: #F1D9A6;
+  --shadow: rgba(0,0,0,.12);
+  --charcoal: #1A1A1A;    /* header, evidence panel, today strip */
   --charcoal-2: #2E2E2E;
   --brand: #E2001A;
   --brand-dark: #B80015;
@@ -31,6 +46,78 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
+
+/* Dark: charcoal ground (never pure black - this is a reading app), warm
+   off-white text, the same red lifted slightly so it holds contrast. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #121212;
+    --surface: #1C1B1B;
+    --surface-2: #242222;
+    --surface-3: #332F2F;
+    --ink: #F4F1F1;
+    --text: #D9D4D4;
+    --muted: #A39C9C;
+    --line: #2E2B2B;
+    --line-strong: #3E3A3A;
+    --selected-line: #7A2E38;
+    --banner-bg: #1C1B1B;
+    --banner-ink: #B8B1B1;
+    --note-bg: #2A2316;
+    --note-line: #5C4A22;
+    --shadow: rgba(0,0,0,.55);
+    --charcoal: #262323;
+    --charcoal-2: #363232;
+    --brand: #FF3B4E;
+    --brand-dark: #E2001A;
+    --brand-soft: rgba(226, 0, 26, .22);
+    --risk: #FF6B7D;
+    --risk-soft: rgba(158, 27, 50, .35);
+    --dev: #E3A93A;
+    --dev-ink: #F0C46A;
+    --dev-soft: rgba(201, 138, 11, .22);
+    --prof: #6DBD84;
+    --prof-ink: #8FD3A3;
+    --prof-soft: rgba(78, 154, 99, .22);
+    --mast: #4FB08F;
+    --mast-soft: rgba(31, 122, 92, .28);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #121212;
+  --surface: #1C1B1B;
+  --surface-2: #242222;
+  --surface-3: #332F2F;
+  --ink: #F4F1F1;
+  --text: #D9D4D4;
+  --muted: #A39C9C;
+  --line: #2E2B2B;
+  --line-strong: #3E3A3A;
+  --selected-line: #7A2E38;
+  --banner-bg: #1C1B1B;
+  --banner-ink: #B8B1B1;
+  --note-bg: #2A2316;
+  --note-line: #5C4A22;
+  --shadow: rgba(0,0,0,.55);
+  --charcoal: #262323;
+  --charcoal-2: #363232;
+  --brand: #FF3B4E;
+  --brand-dark: #E2001A;
+  --brand-soft: rgba(226, 0, 26, .22);
+  --risk: #FF6B7D;
+  --risk-soft: rgba(158, 27, 50, .35);
+  --dev: #E3A93A;
+  --dev-ink: #F0C46A;
+  --dev-soft: rgba(201, 138, 11, .22);
+  --prof: #6DBD84;
+  --prof-ink: #8FD3A3;
+  --prof-soft: rgba(78, 154, 99, .22);
+  --mast: #4FB08F;
+  --mast-soft: rgba(31, 122, 92, .28);
+}
+
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; background: var(--ground); font-size: 15px; line-height: 1.5; }
 button, select, textarea, input { font: inherit; }

@@ -10,4 +10,4 @@
   font-weight: 600;
   text-align: center;
 }
-.page-status--error { background: var(--risk-soft); border-color: #E9C3CB; color: var(--risk); }
+.page-status--error { background: var(--risk-soft); border-color: var(--selected-line); color: var(--risk); }

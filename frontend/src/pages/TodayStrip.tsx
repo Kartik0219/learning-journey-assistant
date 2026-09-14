@@ -12,6 +12,21 @@ function nextBand(total: number): { label: string; gap: number } | null {
   return up ? { label: up[1], gap: Math.round((up[0] - total) * 100) / 100 } : null
 }
 
+/** A ring showing the subject total out of 100, coloured by its band. */
+function Gauge({ value, tone, label }: { value: number; tone: string; label: string }) {
+  const r = 40
+  const c = 2 * Math.PI * r
+  const pct = Math.max(0, Math.min(100, value))
+  return (
+    <svg className={`gauge tone-${tone}`} viewBox="0 0 100 100" role="img" aria-label={`${value.toFixed(2)} out of 100, ${label}`}>
+      <circle className="gauge-track" cx="50" cy="50" r={r} />
+      <circle className="gauge-fill" cx="50" cy="50" r={r} strokeDasharray={`${(c * pct) / 100} ${c}`} transform="rotate(-90 50 50)" />
+      <text className="gauge-value" x="50" y="47">{value.toFixed(1)}</text>
+      <text className="gauge-label" x="50" y="64">{label}</text>
+    </svg>
+  )
+}
+
 /**
  * The ten-second view. A student between classes needs one number that
  * matters this week, one lever, and one thing to do - not a report. All of
@@ -31,6 +46,7 @@ export function TodayStrip() {
 
   return (
     <section className={`today tone-${weakest.tone}`} aria-label="What matters today">
+      <Gauge value={weakest.total} tone={weakest.tone} label={weakest.band} />
       <div className="today-main">
         <p className="eyebrow">Today</p>
         <h2 className="today-line">
