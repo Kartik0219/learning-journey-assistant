@@ -83,6 +83,7 @@ export interface Material {
   learning_outcome_code: string | null
   source_url: string | null
   provenance: 'subject' | 'curated'
+  resource_type: 'reading' | 'video'
   mastery_pct: number | null
 }
 
@@ -103,6 +104,7 @@ export interface LibraryMaterial {
   passage_text: string
   source_url: string | null
   provenance: 'subject' | 'curated'
+  resource_type: 'reading' | 'video'
 }
 
 export interface LibrarySilo {

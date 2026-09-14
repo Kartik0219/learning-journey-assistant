@@ -196,7 +196,7 @@ def load_assessment_results() -> pd.DataFrame:
     return df.reindex(columns=columns)
 
 
-_MATERIAL_COLUMNS = ["subject_code", "silo_code", "title", "passage_text", "source_url", "provenance"]
+_MATERIAL_COLUMNS = ["subject_code", "silo_code", "title", "passage_text", "source_url", "provenance", "resource_type"]
 
 # Hand-picked open resources per SILO, kept next to the workbook so the
 # coordinator can edit or replace them without touching code.
@@ -224,4 +224,10 @@ def load_topic_materials() -> pd.DataFrame:
     if "source_url" not in df.columns:
         df["source_url"] = None
     df["source_url"] = df["source_url"].replace("", None)
+    if "resource_type" not in df.columns:
+        df["resource_type"] = ""
+    # Older rows with no explicit resource_type: infer "video" from a
+    # youtube.com/youtu.be URL, "reading" otherwise.
+    is_video = df["source_url"].fillna("").str.contains("youtube.com|youtu.be", case=False, regex=True)
+    df["resource_type"] = df["resource_type"].where(df["resource_type"] != "", is_video.map({True: "video", False: "reading"}))
     return df.reindex(columns=_MATERIAL_COLUMNS)

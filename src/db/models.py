@@ -302,6 +302,10 @@ class TopicMaterial(Base):
     # SILO because the workbook shipped with no subject material at all.
     # The UI labels curated rows so nobody mistakes them for La Trobe's own.
     provenance: Mapped[str] = mapped_column(String(20), default="subject")
+    # "reading" (article, docs, textbook excerpt) or "video". Lets the UI
+    # show what kind of resource a student is about to open before they
+    # click through.
+    resource_type: Mapped[str] = mapped_column(String(20), default="reading")
 
     subject: Mapped[Subject] = relationship()
     learning_outcome: Mapped[LearningOutcome | None] = relationship()

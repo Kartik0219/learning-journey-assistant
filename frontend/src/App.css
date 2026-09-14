@@ -41,6 +41,7 @@
 
 /* Chips and bands */
 .chip { border-radius: 999px; display: inline-block; font-size: 11.5px; font-weight: 700; justify-self: start; letter-spacing: .04em; line-height: 1.3; padding: 3px 9px; text-transform: uppercase; white-space: nowrap; }
+.chip:has(svg) { align-items: center; display: inline-flex; gap: 4px; }
 .chip.atRisk { background: var(--risk-soft); color: var(--risk); }
 .chip.developing { background: var(--dev-soft); color: var(--dev-ink); }
 .chip.proficient { background: var(--prof-soft); color: var(--prof-ink); }

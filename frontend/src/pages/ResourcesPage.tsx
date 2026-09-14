@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BookOpen, ExternalLink } from 'lucide-react'
+import { BookOpen, ExternalLink, PlayCircle, FileText } from 'lucide-react'
 import { api, masteryBand, type Material } from '../api'
 import { Dropdown } from '../Dropdown'
 import { useStudent } from '../studentContext'
@@ -8,10 +8,14 @@ import { PageError } from './PageError'
 
 function MaterialCard({ m }: { m: Material }) {
   const focus = m.mastery_pct !== null && m.mastery_pct < 65
+  const TypeIcon = m.resource_type === 'video' ? PlayCircle : FileText
   return (
     <article className={`material resource${focus ? ' focus' : ''}`}>
       <div className="material-head">
-        <p className="material-title">{m.title}</p>
+        <p className="material-title">
+          {m.title}
+          <span className="chip muted"><TypeIcon size={12} aria-hidden="true" /> {m.resource_type === 'video' ? 'Video' : 'Reading'}</span>
+        </p>
       </div>
       <p>{m.passage_text}</p>
       {m.source_url && (
@@ -38,6 +42,7 @@ export function ResourcesPage() {
     .filter((s) => !activeCode || s.code === activeCode)
     .sort((a, b) => a.code.localeCompare(b.code))
   const total = subjects.reduce((n, s) => n + s.silos.reduce((m, silo) => m + silo.materials.length, 0), 0)
+  const siloCount = subjects.reduce((n, s) => n + s.silos.length, 0)
   const anyCurated = subjects.some((s) => s.silos.some((silo) => silo.materials.some((m) => m.provenance === 'curated')))
 
   return (
@@ -45,8 +50,8 @@ export function ResourcesPage() {
       <header className="page-head">
         <div>
           <p className="eyebrow">{studentLabel} · resources</p>
-          <h1>What to read for each outcome</h1>
-          {total > 0 && <p className="sub">{total} resources across {subjects.length} subject{subjects.length === 1 ? '' : 's'}.</p>}
+          <h1>Study resources, by SILO</h1>
+          {total > 0 && <p className="sub">{total} resources across {siloCount} SILO{siloCount === 1 ? '' : 's'} in {activeCode}.</p>}
         </div>
         {allSubjectCodes.length > 1 && <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={allSubjectCodes.map((code) => ({ value: code, label: code }))} onChange={setSubjectCode} />}
       </header>

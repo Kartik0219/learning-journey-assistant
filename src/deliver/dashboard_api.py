@@ -210,6 +210,7 @@ def get_student_resources(session: Session, actor: Actor, student_id: int) -> di
                     ),
                     "source_url": material.source_url,
                     "provenance": material.provenance,
+                    "resource_type": material.resource_type,
                     "mastery_pct": round(score * 100) if score is not None else None,
                 }
             )
@@ -277,6 +278,7 @@ def get_resource_library(session: Session) -> dict:
                 "passage_text": material.passage_text,
                 "source_url": material.source_url,
                 "provenance": material.provenance,
+                "resource_type": material.resource_type,
             }
         )
 

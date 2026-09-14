@@ -103,6 +103,9 @@ class TopicMaterialRecord(BaseModel):
     passage_text: str = Field(min_length=1)
     source_url: str | None = None
     provenance: str = "subject"
+    # "reading" (article/docs/textbook chapter) or "video". Defaults to
+    # "reading" for older rows/datasets that predate this column.
+    resource_type: str = "reading"
 
     @field_validator("subject_code")
     @classmethod

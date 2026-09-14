@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react'
-import { BookOpen, ExternalLink } from 'lucide-react'
+import { BookOpen, ExternalLink, PlayCircle, FileText } from 'lucide-react'
 import { api, type LibraryMaterial } from '../api'
 import { Dropdown } from '../Dropdown'
 import { useApi } from '../useApi'
 import { PageError } from './PageError'
 
 function MaterialCard({ m }: { m: LibraryMaterial }) {
+  const TypeIcon = m.resource_type === 'video' ? PlayCircle : FileText
   return (
     <article className="material resource">
       <div className="material-head">
-        <p className="material-title">{m.title}</p>
+        <p className="material-title">
+          {m.title}
+          <span className="chip muted"><TypeIcon size={12} aria-hidden="true" /> {m.resource_type === 'video' ? 'Video' : 'Reading'}</span>
+        </p>
         {m.provenance === 'curated' && <span className="chip muted">curated</span>}
       </div>
       <p>{m.passage_text}</p>
