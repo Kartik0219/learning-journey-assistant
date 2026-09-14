@@ -138,6 +138,8 @@ be straightforward rather than creative.
 
 ### 3.5 Resources
 
+![Resources](images/app-resources.png)
+
 Reading for each learning outcome, grouped by subject and **ordered by
 where you need it most**: resources for your weakest outcomes come first,
 each showing your current mastery band, and outcomes under 65% are marked
