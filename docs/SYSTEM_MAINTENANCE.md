@@ -88,9 +88,9 @@ or .xlsx│  connect   │    when no credentials / dataset set)
 | `/resources` | GET | Signed-in † | Revision materials |
 | `/ai-insight` | GET | Signed-in † | **Opt-in** LLM analysis; off unless a provider is configured |
 | `/practice/<recommendation_id>` | POST | Student | Marks a recommendation as practised (engagement, F11) |
-| `/app/…` | GET | Public shell; data needs sign-in | The React SPA (`frontend/dist`); unknown paths fall back to `index.html` |
+| `/app/…` | GET | Public shell; data needs sign-in | **The student app** — React (`frontend/dist`), La Trobe design; where sign-in lands. Unknown paths fall back to `index.html` |
 | `/api/session` | GET | Signed-in (401 otherwise) | The signed-in student (the list only ever contains themself) |
-| `/api/students/<id>/dashboard` · `/results` · `/resources` | GET | Signed-in † | JSON for the SPA — same `require_student_access` + consent checks as the pages |
+| `/api/students/<id>/dashboard` · `/results` · `/resources` · `/ai-insight` | GET | Signed-in † | JSON for the SPA — same `require_student_access` + consent checks as the pages |
 | `/api/recommendations/<id>/practice` | POST (JSON only) | Owner student † | SPA "Mark as practised"; JSON-only so a cross-site form cannot trigger it |
 
 † The app is **student-only** (Staff and Admin were removed on 13 Sep
@@ -348,9 +348,11 @@ Carried openly rather than hidden — each is flagged on its Jira ticket.
    this FK is the single highest-value correctness improvement left, but
    it needs a confirmed mapping rule — do not guess at it.
 3. **Two front ends over one backend.** The server-rendered Flask pages
-   are the complete product. The React SPA at `/app/` covers three
-   student views — dashboard, results, study plan — over the JSON API in
-   `src/deliver/spa_api.py`, and does not yet show the weight columns.
+   The React student app at `/app/` (Ge Su's front end, La Trobe design)
+   is the main interface: dashboard, results, study plan, quizzes,
+   resources and AI insight over the JSON API in `src/deliver/spa_api.py`.
+   The Jinja pages remain as a no-JavaScript fallback and need keeping in
+   step, or retiring.
 4. **Student-only (team decision, 13 Sep 2026).** Staff and Admin roles,
    the coordinator report and the review queue were removed. N1 is
    therefore partly met (no Educator or Administrator roles), and F4/F5

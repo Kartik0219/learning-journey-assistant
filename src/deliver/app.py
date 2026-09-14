@@ -119,9 +119,9 @@ def create_app() -> Flask:
 
     @app.route("/")
     def index():
-        if "role" in session:
-            return redirect(_home())
-        return render_template("landing.html")
+        # Signed-in students go to their app; everyone else goes to sign-in
+        # (the student-only app has no separate public landing page).
+        return redirect(_home() if "role" in session else url_for("login"))
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
