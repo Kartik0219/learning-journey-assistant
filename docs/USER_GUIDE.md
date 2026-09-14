@@ -60,8 +60,12 @@ Once signed in you land on the **Dashboard**. The navigation across the
 top (or the menu button on a phone) gives you six places to go:
 Dashboard, Results, Study and Insight. Study has three sections — Plan,
 Quizzes and Resources — and Insight has two — Where I stand and What if?.
-The Dashboard opens with a **Today** strip: the subject closest to its next
-grade band, the assessment that moves it most, and the first step to take.
+The Dashboard opens with a **Today** strip: a gauge of the subject closest to
+its next grade band, the assessment that moves it most, and the first step
+to take. On a phone the four tabs sit in a bar at the bottom of the screen.
+
+**Light or dark:** the app follows your device setting; the sun/moon button
+in the header switches it, and the choice is remembered in that browser.
 
 ### 3.1 Dashboard — where you stand
 

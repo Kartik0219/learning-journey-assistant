@@ -3,13 +3,12 @@ import {
   BrainCircuit,
   LayoutDashboard,
   LogOut,
-  Menu,
   Sparkles,
   TableProperties,
-  X,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Avatar } from './Avatar'
+import { ThemeToggle } from './ThemeToggle'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardPage } from './pages/DashboardPage'
 import { InsightPage } from './pages/InsightPage'
@@ -24,6 +23,7 @@ import './App.css'
 // Four places to go. Quizzes and Resources are steps of the same journey as
 // the plan (plan → read → test), and What if? is the question that follows
 // "you are 9 marks short" - so they live as sub-tabs, not top-level tabs.
+// On phones the same four render as a bottom tab bar (App.css).
 const navigation = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/' },
   { label: 'Results', icon: TableProperties, to: '/results' },
@@ -55,37 +55,26 @@ function Tabbed({ tabs, label, children }: { tabs: { label: string; to: string }
 }
 
 function AppShell() {
-  const [menuOpen, setMenuOpen] = useState(false)
   const { studentLabel } = useStudent()
-  const closeMenu = () => setMenuOpen(false)
 
   return (
     <div className="shell">
       <div className="chrome">
         <header className="topbar">
-          <NavLink className="brand" to="/" aria-label="Learning Journey Assistant dashboard" onClick={closeMenu}>
+          <NavLink className="brand" to="/" aria-label="Learning Journey Assistant dashboard">
             <span className="brand-mark"><BookOpen size={16} aria-hidden="true" /></span>
             <span className="brand-name">Learning Journey Assistant</span>
           </NavLink>
           <div className="topbar-user">
             <span className="student-pill"><Avatar seed={studentLabel} /> {studentLabel}</span>
+            <ThemeToggle />
             {/* Real sign-out: clears the Flask session server-side. */}
             <a className="logout-btn" href="/logout"><LogOut size={15} aria-hidden="true" /> Log out</a>
           </div>
-          <button
-            className="menu-toggle"
-            type="button"
-            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={menuOpen}
-            aria-controls="primary-navigation"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
-          </button>
         </header>
-        <nav className={menuOpen ? 'navbar navbar--open' : 'navbar'} id="primary-navigation" aria-label="Primary navigation">
+        <nav className="navbar" id="primary-navigation" aria-label="Primary navigation">
           {navigation.map(({ label, icon: Icon, to }) => (
-            <NavLink className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')} key={label} to={to} end={to === '/'} onClick={closeMenu}>
+            <NavLink className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')} key={label} to={to} end={to === '/'}>
               <Icon size={16} aria-hidden="true" />
               {label}
             </NavLink>
