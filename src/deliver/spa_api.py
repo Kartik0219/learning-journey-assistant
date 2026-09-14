@@ -21,6 +21,7 @@ from flask import Blueprint, abort, jsonify, request, session
 
 from src.db.database import get_session
 from src.db.models import Student, StudyRecommendation, Subject
+from src.deliver.ai_insight_api import get_ai_insight
 from src.deliver.dashboard_api import get_student_dashboard, get_student_resources
 from src.estimate.mastery import record_engagement
 from src.security.authorization import Actor, AuthorizationError, Role, require_student_access
@@ -80,6 +81,15 @@ def resources(student_id: int):
     actor = _actor()
     with get_session() as db:
         return jsonify(get_student_resources(db, actor, student_id))
+
+
+@api.get("/students/<int:student_id>/ai-insight")
+def ai_insight(student_id: int):
+    """Opt-in LLM insight (IOG-52) - same access and consent gate, cached
+    per student, and `enabled: false` when no provider is configured."""
+    actor = _actor()
+    with get_session() as db:
+        return jsonify(get_ai_insight(db, actor, student_id))
 
 
 @api.get("/students/<int:student_id>/results")

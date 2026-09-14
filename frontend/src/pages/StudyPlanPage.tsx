@@ -1,21 +1,14 @@
 import { useState } from 'react'
-import { CheckCircle2, Eye } from 'lucide-react'
-import { api, masteryBand, type Outcome } from '../api'
+import { CheckCircle2 } from 'lucide-react'
+import { api, humanise, masteryBand, masteryPct, type Outcome } from '../api'
 import { useStudent } from '../studentContext'
 import { useApi } from '../useApi'
 import { PageError } from './PageError'
 
-// Backend method keys ("spaced_practice") -> "Spaced practice".
-function humanise(key: string): string {
-  const text = key.replace(/_/g, ' ')
-  return text.charAt(0).toUpperCase() + text.slice(1)
-}
-
-function PlanCard({ outcome, canPractise, onPractised }: { outcome: Outcome; canPractise: boolean; onPractised: () => void }) {
-  const [revealed, setRevealed] = useState(false)
+function PlanCard({ outcome, onPractised }: { outcome: Outcome; onPractised: () => void }) {
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
-  const pct = outcome.mastery_pct ?? 0
+  const pct = masteryPct(outcome) ?? 0
   const { status, label } = masteryBand(pct)
   const rec = outcome.recommendation!
 
@@ -30,44 +23,51 @@ function PlanCard({ outcome, canPractise, onPractised }: { outcome: Outcome; can
     }
   }
 
-  return <section className="panel plan-card">
-    <div className="panel-heading"><h2>{outcome.code} <span className="silo-tag">{outcome.subject_code}</span> <span className={`status ${status}`}>{label} · {pct}%</span></h2><p>{outcome.description}</p></div>
-    <p><strong>Recommended method:</strong> {humanise(rec.method)}</p>
-    <p className="material-text">{rec.material_text}</p>
-    {rec.source_title && <p className="evidence-meta">Grounded in: {rec.source_title}</p>}
-    {outcome.quiz_questions.length > 0 && <div className="evidence-block">
-      <p>Practice questions</p>
-      <ol className="steps">{outcome.quiz_questions.map((q, index) => <li key={q.id}><span>{index + 1}</span><p>{q.question_text}{revealed && q.answer_text && <><br /><em>Model answer{q.answer_title ? ` (${q.answer_title})` : ''}:</em> {q.answer_text}</>}</p></li>)}</ol>
-      {!revealed && <button className="plan-btn plan-btn--ghost" type="button" onClick={() => setRevealed(true)}><Eye size={15} aria-hidden="true" /> Reveal model answers</button>}
-    </div>}
-    {canPractise && <button className="plan-btn" type="button" disabled={saving || done} onClick={practise}><CheckCircle2 size={15} aria-hidden="true" /> {done ? 'Marked as practised' : saving ? 'Saving…' : 'Mark as practised'}</button>}
-  </section>
+  return (
+    <section className="panel plan-card">
+      <div className="plan-head">
+        <div>
+          <h2>{outcome.code} <span className="silo-tag">{outcome.subject_code}</span></h2>
+          <p className="sub">{outcome.description}</p>
+        </div>
+        <span className="outcome-pct">{pct.toFixed(1)}% <span className={`chip ${status}`}>{label}</span></span>
+      </div>
+      <div className="method-row"><span className="chip brand">{humanise(rec.method)}</span><span className="sub">recommended study method</span></div>
+      {rec.source_title
+        ? <div className="material"><p className="material-title">From “{rec.source_title}”</p><p>{rec.material_text}</p></div>
+        : <p className="empty-note">{rec.material_text}</p>}
+      <div>
+        <button className="btn" type="button" disabled={saving || done} onClick={practise}>
+          <CheckCircle2 size={15} aria-hidden="true" /> {done ? 'Marked as practised' : saving ? 'Saving…' : 'Mark as practised'}
+        </button>
+      </div>
+    </section>
+  )
 }
 
 export function StudyPlanPage() {
-  const { session, studentId, studentLabel } = useStudent()
+  const { studentId, studentLabel } = useStudent()
   const { data, error, loading, reload } = useApi(() => api.dashboard(studentId), studentId)
 
-  if (loading && !data) return <p className="page-status">Loading study plan…</p>
+  if (loading && !data) return <p className="page-status">Loading your study plan…</p>
   if (error) return <PageError error={error} />
 
   const planned = (data?.outcomes ?? [])
-    .filter((o) => o.recommendation && o.mastery_pct !== null)
-    .sort((a, b) => (a.mastery_pct ?? 0) - (b.mastery_pct ?? 0))
+    .filter((o) => o.recommendation && o.mastery_score !== null)
+    .sort((a, b) => (a.mastery_score ?? 0) - (b.mastery_score ?? 0))
 
   return (
-    <main className="dashboard" id="study-plan">
-      <header className="dashboard-header results-header">
+    <main className="page" id="study-plan">
+      <header className="page-head">
         <div>
           <p className="eyebrow">{studentLabel} · study plan</p>
-          <h1>Study plan</h1>
+          <h1>What to study next</h1>
         </div>
-        <div className="header-spacer" aria-hidden="true" />
       </header>
       {planned.length === 0
         ? <p className="page-status">No study recommendations yet — they appear once your results have been analysed.</p>
-        : planned.map((outcome) => <PlanCard key={outcome.id} outcome={outcome} canPractise={session.role === 'student'} onPractised={reload} />)}
-      <footer>Weakest outcomes first. Every recommendation and question is built from your own feedback and subject materials — not generated from nothing. Formative only.</footer>
+        : <div className="plan-grid">{planned.map((outcome) => <PlanCard key={outcome.id} outcome={outcome} onPractised={reload} />)}</div>}
+      <footer className="footer-note">Weakest outcomes first. Study methods come from a fixed table, and material only ever comes from real subject passages. Marking a step practised gives a small, capped boost to that outcome.</footer>
     </main>
   )
 }

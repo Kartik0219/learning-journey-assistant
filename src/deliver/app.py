@@ -112,10 +112,15 @@ def create_app() -> Flask:
         students = [{"id": student.id, "label": student.display_name}] if student else []
         return actor, students, actor.student_id
 
+    def _home() -> str:
+        """Where a signed-in student lands: the React student app when its
+        bundle is built, otherwise the server-rendered dashboard."""
+        return "/app/" if (SPA_DIST / "index.html").exists() else url_for("dashboard")
+
     @app.route("/")
     def index():
         if "role" in session:
-            return redirect(url_for("dashboard"))
+            return redirect(_home())
         return render_template("landing.html")
 
     @app.route("/login", methods=["GET", "POST"])
@@ -144,7 +149,7 @@ def create_app() -> Flask:
 
         session["role"] = identity.role.value
         session["student_id"] = identity.student_id
-        return redirect(_safe_next(request.args.get("next")) or url_for("dashboard"))
+        return redirect(_safe_next(request.args.get("next")) or _home())
 
     @app.route("/logout")
     def logout():

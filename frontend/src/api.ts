@@ -5,7 +5,7 @@
 // in" - send the browser to the real login page and come back here after.
 
 export interface SessionInfo {
-  role: 'student' | 'staff' | 'admin'
+  role: 'student'
   student_id: number | null
   students: { id: number; label: string }[]
 }
@@ -56,6 +56,8 @@ export interface ResultRow {
   assessment: string
   score: number | null
   feedback: string | null
+  weight: number | null
+  weighted_score: number | null
   silo_codes: string[]
 }
 
@@ -70,6 +72,23 @@ export interface SubjectResults {
 export interface Results {
   student: { id: number; display_name: string }
   subjects: SubjectResults[]
+}
+
+export interface Resources {
+  student: { id: number; display_name: string }
+  subjects: { code: string; materials: { title: string; passage_text: string; learning_outcome_code: string | null }[] }[]
+}
+
+export interface AiInsight {
+  student: { id: number; display_name: string }
+  enabled: boolean
+  error: string | null
+  insight: null | {
+    learningOutcomes: { code: string; title: string; status: string; masteryPercentage: number; evidenceQuote: string }[]
+    strengths: string[]
+    focusAreas: { topic: string; recommendedStep: string; resourceLinkOrModule: string }[]
+    disclaimer: string
+  }
 }
 
 export class ApiError extends Error {
@@ -101,6 +120,8 @@ export const api = {
   session: () => request<SessionInfo>('/api/session'),
   dashboard: (studentId: number) => request<Dashboard>(`/api/students/${studentId}/dashboard`),
   results: (studentId: number) => request<Results>(`/api/students/${studentId}/results`),
+  resources: (studentId: number) => request<Resources>(`/api/students/${studentId}/resources`),
+  aiInsight: (studentId: number) => request<AiInsight>(`/api/students/${studentId}/ai-insight`),
   markPractised: (recommendationId: number) =>
     request<{ ok: boolean }>(`/api/recommendations/${recommendationId}/practice`, {
       method: 'POST',
@@ -117,4 +138,56 @@ export function masteryBand(pct: number): { status: MasteryStatus; label: string
   if (pct >= 65) return { status: 'proficient', label: 'Proficient' }
   if (pct >= 50) return { status: 'developing', label: 'Developing' }
   return { status: 'atRisk', label: 'At risk' }
+}
+
+// A subject total mapped to La Trobe's grade bands. Formative, not an official grade.
+export function performanceBand(total: number): { status: MasteryStatus; label: string } {
+  if (total >= 80) return { status: 'mastered', label: 'High Distinction' }
+  if (total >= 70) return { status: 'proficient', label: 'Distinction' }
+  if (total >= 60) return { status: 'proficient', label: 'Credit' }
+  if (total >= 50) return { status: 'developing', label: 'Pass' }
+  return { status: 'atRisk', label: 'Fail' }
+}
+
+// Mastery to one decimal place, from the unrounded score the backend stores.
+export function masteryPct(outcome: Outcome): number | null {
+  return outcome.mastery_score === null ? null : Math.round(outcome.mastery_score * 1000) / 10
+}
+
+const hasWeights = (rows: ResultRow[]) => rows.length > 0 && rows.every((r) => r.weight && r.score !== null)
+
+// Weight-averaged score when the dataset has weights, plain mean otherwise.
+export function weightedAverage(rows: ResultRow[]): number | null {
+  const scored = rows.filter((r) => r.score !== null)
+  if (!scored.length) return null
+  if (hasWeights(scored)) {
+    const w = scored.reduce((sum, r) => sum + (r.weight ?? 0), 0)
+    return scored.reduce((sum, r) => sum + (r.score ?? 0) * (r.weight ?? 0), 0) / w
+  }
+  return scored.reduce((sum, r) => sum + (r.score ?? 0), 0) / scored.length
+}
+
+// The subject total: the sum of weighted scores (the workbook's own figure) when present.
+export function subjectTotal(subject: SubjectResults): number | null {
+  const rows = subject.assessments
+  if (rows.length && rows.every((r) => r.weighted_score !== null)) {
+    return Math.round(rows.reduce((sum, r) => sum + (r.weighted_score ?? 0), 0) * 100) / 100
+  }
+  return subject.average_score
+}
+
+export function usesWeights(rows: ResultRow[]): boolean {
+  return hasWeights(rows)
+}
+
+// "spaced_practice" -> "Spaced practice"
+export function humanise(key: string): string {
+  const text = key.replace(/_/g, ' ')
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+// "CSE1OOF - Central examination" -> "Central examination"
+export function assessmentName(name: string): string {
+  const cut = name.indexOf(' - ')
+  return cut === -1 ? name : name.slice(cut + 3)
 }
