@@ -140,6 +140,25 @@ def test_login_without_next_lands_in_the_student_app(client):
     assert client.get("/", follow_redirects=False).headers["Location"].endswith("/app/")
 
 
+def test_resources_carry_provenance_link_and_mastery_for_personal_ordering(client):
+    """Each resource says where it came from, links out when it can, and
+    carries the student's mastery on its outcome so the UI can put the
+    weakest outcomes first."""
+    _login_student(client)
+    body = client.get(f"/api/students/{_id_of('DEMO0001')}/resources").get_json()
+    materials = [m for s in body["subjects"] for m in s["materials"]]
+    assert materials, "sample dataset seeds topic materials"
+    for m in materials:
+        assert m["provenance"] in ("subject", "curated")
+        assert "source_url" in m and "mastery_pct" in m
+    for subject in body["subjects"]:
+        scored = [m["mastery_pct"] for m in subject["materials"] if m["mastery_pct"] is not None]
+        assert scored == sorted(scored)
+        first_unscored = next((i for i, m in enumerate(subject["materials"]) if m["mastery_pct"] is None), None)
+        if first_unscored is not None:
+            assert all(m["mastery_pct"] is None for m in subject["materials"][first_unscored:])
+
+
 def test_ai_insight_endpoint_is_off_without_a_provider_and_guards_access(client):
     assert client.get("/api/students/1/ai-insight").status_code == 401
 

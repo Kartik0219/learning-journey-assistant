@@ -294,6 +294,14 @@ class TopicMaterial(Base):
     )
     title: Mapped[str] = mapped_column(String(200))
     passage_text: Mapped[str] = mapped_column(Text)
+    # Where a student can go to read the full resource. None for passages
+    # that are themselves the material (the sample dataset's excerpts).
+    source_url: Mapped[str | None] = mapped_column(String(500), default=None)
+    # "subject": official subject material supplied by the coordinator.
+    # "curated": an open resource the project team hand-picked for the
+    # SILO because the workbook shipped with no subject material at all.
+    # The UI labels curated rows so nobody mistakes them for La Trobe's own.
+    provenance: Mapped[str] = mapped_column(String(20), default="subject")
 
     subject: Mapped[Subject] = relationship()
     learning_outcome: Mapped[LearningOutcome | None] = relationship()

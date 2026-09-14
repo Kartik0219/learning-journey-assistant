@@ -124,8 +124,14 @@
 .method-row { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
 .material { background: #F8F6F6; border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; }
 .material p { margin: 0; white-space: pre-line; }
-.material-title { color: var(--ink); font-weight: 700; margin-bottom: 4px !important; }
+.material-title { color: var(--ink); font-weight: 700; margin-bottom: 4px !important; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .materials { display: grid; gap: 10px; }
+.material-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.material.resource.focus { border-left: 3px solid var(--brand); }
+.material-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; color: var(--brand); font: 600 13px var(--sans); text-decoration: none; }
+.material-link:hover, .material-link:focus-visible { text-decoration: underline; }
+.chip.muted { background: #ECE9E9; color: var(--muted); }
+.curated-note { background: #FFF7E8; border: 1px solid #F1D9A6; border-radius: 8px; color: var(--ink); font-size: 13.5px; line-height: 1.5; margin: 0 0 16px; padding: 10px 14px; }
 .empty-note { background: #F8F6F6; border: 1px dashed var(--line-strong); border-radius: 8px; color: var(--muted); font-size: 13.5px; margin: 0; padding: 10px 12px; }
 .error-note { background: var(--risk-soft); border-radius: 8px; color: var(--risk); font-weight: 600; margin: 0; padding: 10px 12px; }
 .plain-list { margin: 0; padding-left: 18px; }

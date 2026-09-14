@@ -216,6 +216,8 @@ def upsert_topic_material(session: Session, record: TopicMaterialRecord) -> Topi
     if existing:
         existing.learning_outcome_id = learning_outcome_id
         existing.passage_text = record.passage_text
+        existing.source_url = record.source_url
+        existing.provenance = record.provenance
         return existing
 
     material = TopicMaterial(
@@ -223,6 +225,8 @@ def upsert_topic_material(session: Session, record: TopicMaterialRecord) -> Topi
         learning_outcome_id=learning_outcome_id,
         title=record.title,
         passage_text=record.passage_text,
+        source_url=record.source_url,
+        provenance=record.provenance,
     )
     session.add(material)
     return material

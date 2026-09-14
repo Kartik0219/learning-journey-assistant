@@ -361,8 +361,13 @@ Carried openly rather than hidden — each is flagged on its Jira ticket.
 6. **Free-tier deployment** — cold starts, ephemeral storage (§4.1).
 7. **Moodle integration is untested against a live instance** — the HTTP
    client is real but has never run against a real WS token.
-8. **No topic materials in the 150-student workbook**, so study plans and
-   Resources say none are loaded yet instead of showing passages.
+8. **No topic materials in the 150-student workbook.** Study plans,
+   quizzes and Resources therefore run on `data/dataset/curated_resources.csv`
+   — open resources the team hand-picked per SILO (loaded with
+   `provenance="curated"` and labelled as such in the UI). They are not La
+   Trobe subject material; replace or extend that CSV with official
+   passages (`provenance="subject"`) and re-run the pipeline. Every
+   `source_url` must be `https://` or the row is rejected at parse time.
 
 ---
 

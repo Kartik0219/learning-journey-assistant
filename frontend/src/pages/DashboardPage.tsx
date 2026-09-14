@@ -95,7 +95,13 @@ function NextSteps({ outcome, rows }: { outcome: Outcome; rows: ResultRow[] }) {
       {rec && <div className="method-row"><span className="chip brand">{humanise(rec.method)}</span><span className="sub">chosen from the fixed study-method table</span></div>}
       {steps.length > 0 && <ol className="steps">{steps.map((step, index) => <li key={index}><span className="step-n">{index + 1}</span><span>{step}</span></li>)}</ol>}
       {rec && (rec.source_title
-        ? <div className="material"><p className="material-title">From “{rec.source_title}”</p><p>{rec.material_text}</p></div>
+        ? (
+          <div className="material">
+            <p className="material-title">From “{rec.source_title}”{rec.source_provenance === 'curated' && <span className="chip muted">curated</span>}</p>
+            <p>{rec.material_text}</p>
+            {rec.source_url && <a className="material-link" href={rec.source_url} target="_blank" rel="noopener noreferrer">Open resource ↗</a>}
+          </div>
+        )
         : <p className="empty-note">{rec.material_text} Nothing is made up in its place.</p>)}
     </section>
   )

@@ -34,7 +34,13 @@ function PlanCard({ outcome, onPractised }: { outcome: Outcome; onPractised: () 
       </div>
       <div className="method-row"><span className="chip brand">{humanise(rec.method)}</span><span className="sub">recommended study method</span></div>
       {rec.source_title
-        ? <div className="material"><p className="material-title">From “{rec.source_title}”</p><p>{rec.material_text}</p></div>
+        ? (
+          <div className="material">
+            <p className="material-title">From “{rec.source_title}”{rec.source_provenance === 'curated' && <span className="chip muted">curated</span>}</p>
+            <p>{rec.material_text}</p>
+            {rec.source_url && <a className="material-link" href={rec.source_url} target="_blank" rel="noopener noreferrer">Open resource ↗</a>}
+          </div>
+        )
         : <p className="empty-note">{rec.material_text}</p>}
       <div>
         <button className="btn" type="button" disabled={saving || done} onClick={practise}>

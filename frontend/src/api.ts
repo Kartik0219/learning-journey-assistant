@@ -22,6 +22,7 @@ export interface QuizQuestion {
   question_type: string
   answer_title: string | null
   answer_text: string | null
+  answer_url: string | null
 }
 
 export interface Recommendation {
@@ -29,6 +30,8 @@ export interface Recommendation {
   method: string
   material_text: string
   source_title: string | null
+  source_url: string | null
+  source_provenance: 'subject' | 'curated' | null
 }
 
 export interface Outcome {
@@ -74,9 +77,18 @@ export interface Results {
   subjects: SubjectResults[]
 }
 
+export interface Material {
+  title: string
+  passage_text: string
+  learning_outcome_code: string | null
+  source_url: string | null
+  provenance: 'subject' | 'curated'
+  mastery_pct: number | null
+}
+
 export interface Resources {
   student: { id: number; display_name: string }
-  subjects: { code: string; materials: { title: string; passage_text: string; learning_outcome_code: string | null }[] }[]
+  subjects: { code: string; materials: Material[] }[]
 }
 
 export interface AiInsight {
