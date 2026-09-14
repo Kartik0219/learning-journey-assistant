@@ -90,7 +90,7 @@ or .xlsx│  connect   │    when no credentials / dataset set)
 | `/practice/<recommendation_id>` | POST | Student | Marks a recommendation as practised (engagement, F11) |
 | `/app/…` | GET | Public shell; data needs sign-in | **The student app** — React (`frontend/dist`), La Trobe design; where sign-in lands. Unknown paths fall back to `index.html` |
 | `/api/session` | GET | Signed-in (401 otherwise) | The signed-in student (the list only ever contains themself) |
-| `/api/students/<id>/dashboard` · `/results` · `/resources` · `/ai-insight` | GET | Signed-in † | JSON for the SPA — same `require_student_access` + consent checks as the pages |
+| `/api/students/<id>/dashboard` · `/results` · `/resources` · `/insight` · `/ai-insight` | GET | Signed-in † | JSON for the SPA — same `require_student_access` + consent checks as the pages. `/insight` is the deterministic written reading (`src/deliver/insight_api.py`): templated from the student's own marks, no model, always available; `/ai-insight` is the optional LLM second opinion |
 | `/api/recommendations/<id>/practice` | POST (JSON only) | Owner student † | SPA "Mark as practised"; JSON-only so a cross-site form cannot trigger it |
 
 † The app is **student-only** (Staff and Admin were removed on 13 Sep
@@ -350,7 +350,8 @@ Carried openly rather than hidden — each is flagged on its Jira ticket.
 3. **Two front ends over one backend.** The server-rendered Flask pages
    The React student app at `/app/` (Ge Su's front end, La Trobe design)
    is the main interface: dashboard, results, study plan, quizzes,
-   resources and AI insight over the JSON API in `src/deliver/spa_api.py`.
+   resources, a written insight, the "What if?" grade calculator and the
+   optional AI second opinion over the JSON API in `src/deliver/spa_api.py`.
    The Jinja pages remain as a no-JavaScript fallback and need keeping in
    step, or retiring.
 4. **Student-only (team decision, 13 Sep 2026).** Staff and Admin roles,

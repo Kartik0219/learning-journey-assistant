@@ -1,6 +1,7 @@
 import {
   BookOpen,
   BrainCircuit,
+  Calculator,
   Library,
   LayoutDashboard,
   ListChecks,
@@ -13,8 +14,9 @@ import {
 import { useState } from 'react'
 import { Avatar } from './Avatar'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
-import { AiInsightPage } from './pages/AiInsightPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { InsightPage } from './pages/InsightPage'
+import { WhatIfPage } from './pages/WhatIfPage'
 import { QuizzesPage } from './pages/QuizzesPage'
 import { ResourcesPage } from './pages/ResourcesPage'
 import { ResultsOverviewPage } from './pages/ResultsOverviewPage'
@@ -28,7 +30,8 @@ const navigation = [
   { label: 'Study plan', icon: Sparkles, to: '/study-plan' },
   { label: 'Quizzes', icon: ListChecks, to: '/quizzes' },
   { label: 'Resources', icon: Library, to: '/resources' },
-  { label: 'AI Insight', icon: BrainCircuit, to: '/ai-insight' },
+  { label: 'Insight', icon: BrainCircuit, to: '/insight' },
+  { label: 'What if?', icon: Calculator, to: '/what-if' },
 ]
 
 function AppShell() {
@@ -76,7 +79,9 @@ function AppShell() {
         <Route path="/study-plan" element={<StudyPlanPage />} />
         <Route path="/quizzes" element={<QuizzesPage />} />
         <Route path="/resources" element={<ResourcesPage />} />
-        <Route path="/ai-insight" element={<AiInsightPage />} />
+        <Route path="/insight" element={<InsightPage />} />
+        <Route path="/what-if" element={<WhatIfPage />} />
+        <Route path="/ai-insight" element={<Navigate to="/insight" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
