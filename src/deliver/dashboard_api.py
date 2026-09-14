@@ -89,6 +89,9 @@ def get_student_dashboard(session: Session, actor: Actor, student_id: int) -> di
                 "answer_text": (
                     q.source_topic_material.passage_text if q.source_topic_material else None
                 ),
+                "answer_url": (
+                    q.source_topic_material.source_url if q.source_topic_material else None
+                ),
             }
             for q in latest_quiz_questions(session, student_id, lo.id)
         ]
@@ -110,6 +113,16 @@ def get_student_dashboard(session: Session, actor: Actor, student_id: int) -> di
                         "material_text": recommendation.material_text,
                         "source_title": (
                             recommendation.source_topic_material.title
+                            if recommendation.source_topic_material
+                            else None
+                        ),
+                        "source_url": (
+                            recommendation.source_topic_material.source_url
+                            if recommendation.source_topic_material
+                            else None
+                        ),
+                        "source_provenance": (
+                            recommendation.source_topic_material.provenance
                             if recommendation.source_topic_material
                             else None
                         ),
@@ -164,11 +177,12 @@ def get_student_resources(session: Session, actor: Actor, student_id: int) -> di
         raise ValueError(f"No student with id={student_id}")
 
     # Same subject-scoping the dashboard's overview strip uses: only
-    # subjects this student actually has a scored outcome in.
-    subject_ids = {
-        mastery.learning_outcome.subject_id
-        for mastery in session.query(MasteryScore).filter_by(student_id=student_id).all()
-    }
+    # subjects this student actually has a scored outcome in. The mastery
+    # per outcome is kept so the list can be personalised: resources for
+    # the student's weakest SILOs come first, not alphabetical order.
+    mastery_rows = session.query(MasteryScore).filter_by(student_id=student_id).all()
+    subject_ids = {m.learning_outcome.subject_id for m in mastery_rows}
+    mastery_by_outcome = {m.learning_outcome_id: m.score for m in mastery_rows}
 
     by_subject: dict[str, list[dict]] = {}
     if subject_ids:
@@ -179,6 +193,7 @@ def get_student_resources(session: Session, actor: Actor, student_id: int) -> di
             .all()
         )
         for material in materials:
+            score = mastery_by_outcome.get(material.learning_outcome_id)
             by_subject.setdefault(material.subject.code, []).append(
                 {
                     "title": material.title,
@@ -186,10 +201,23 @@ def get_student_resources(session: Session, actor: Actor, student_id: int) -> di
                     "learning_outcome_code": (
                         material.learning_outcome.code if material.learning_outcome else None
                     ),
+                    "source_url": material.source_url,
+                    "provenance": material.provenance,
+                    "mastery_pct": round(score * 100) if score is not None else None,
                 }
             )
 
-    subjects = [{"code": code, "materials": materials} for code, materials in by_subject.items()]
+    def _weakest_first(item: dict) -> tuple[int, float, str]:
+        # Tagged outcomes with a mastery score first (lowest first), then
+        # untagged subject-wide material; title breaks ties predictably.
+        pct = item["mastery_pct"]
+        return (0 if pct is not None else 1, pct if pct is not None else 0.0, item["title"])
+
+    subjects = [
+        {"code": code, "materials": sorted(items, key=_weakest_first)}
+        for code, items in by_subject.items()
+    ]
+    subjects.sort(key=lambda s: min((m["mastery_pct"] for m in s["materials"] if m["mastery_pct"] is not None), default=101))
 
     return {
         "student": {"id": student.id, "display_name": student.display_name},

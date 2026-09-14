@@ -101,11 +101,35 @@ class TopicMaterialRecord(BaseModel):
     silo_code: str | None = None
     title: str = Field(min_length=1, max_length=200)
     passage_text: str = Field(min_length=1)
+    source_url: str | None = None
+    provenance: str = "subject"
 
     @field_validator("subject_code")
     @classmethod
     def uppercase_code(cls, v: str) -> str:
         return v.strip().upper()
+
+    @field_validator("source_url")
+    @classmethod
+    def https_only(cls, v: str | None) -> str | None:
+        # N5: a link handed to students must be a real https URL - never
+        # javascript:, file:, plain http, or a bare domain the browser guesses at.
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if not v.startswith("https://"):
+            raise ValueError("source_url must start with https://")
+        return v
+
+    @field_validator("provenance")
+    @classmethod
+    def known_provenance(cls, v: str) -> str:
+        v = (v or "subject").strip().lower()
+        if v not in {"subject", "curated"}:
+            raise ValueError("provenance must be 'subject' or 'curated'")
+        return v
 
     @field_validator("silo_code")
     @classmethod

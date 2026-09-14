@@ -109,10 +109,13 @@ Your study plan turns weak outcomes into next steps. Each card covers one
 learning outcome and recommends a study method — a worked example,
 retrieval practice or spaced practice — chosen from a fixed table.
 
-Study material is only ever **taken from real subject materials**, never
-generated. Where a subject has no materials loaded yet (the 150-student
-dataset does not include any), the card says so and flags it for the
-subject coordinator, rather than inventing something.
+Study material is only ever **taken from real resources**, never
+generated. The 150-student dataset ships with no La Trobe subject material,
+so each card points to a resource from the team's curated list (see 3.5)
+for that learning outcome, with a link to open it. Cards from the curated
+list carry a small **curated** label. Where a subject has nothing loaded at
+all, the card says so and flags it for the coordinator rather than inventing
+something.
 
 When you have worked through an item, press **Mark as practised**. That
 records your engagement and gives a small, capped boost to that outcome's
@@ -135,8 +138,20 @@ be straightforward rather than creative.
 
 ### 3.5 Resources
 
-Revision materials for your subjects, grouped by learning outcome. If none
-have been loaded for your subjects yet, the page says so.
+Reading for each learning outcome, grouped by subject and **ordered by
+where you need it most**: resources for your weakest outcomes come first,
+each showing your current mastery band, and outcomes under 65% are marked
+with a red edge.
+
+The list is **curated, not official**. Because the dataset includes no La
+Trobe subject material, the project team hand-picked free, well-known
+resources for every SILO — official language documentation, MIT
+OpenCourseWare, the Princeton Algorithms booksite, OWASP, the Scrum Guide
+and similar. Each card says what the resource covers and how to use it for
+that outcome, and **Open resource** opens it in a new tab on the
+publisher's site. Your subject's own readings on the LMS always take
+priority; a coordinator can replace the curated list with official material
+at any time (System Maintenance Document §9).
 
 ### 3.6 AI Insight — optional
 

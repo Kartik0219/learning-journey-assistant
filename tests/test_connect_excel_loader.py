@@ -143,10 +143,23 @@ def test_load_assessment_results_carries_weight_and_weighted_score(workbook):
     assert pd.isna(unweighted["weight"])
 
 
-def test_load_topic_materials_returns_empty_correctly_shaped_frame(workbook):
+def test_load_topic_materials_returns_the_curated_resource_list(workbook):
+    """The workbook has no material of its own, so the loader supplies the
+    team's curated open-resource list, every row honestly marked curated."""
     materials = excel_loader.load_topic_materials()
-    assert list(materials.columns) == ["subject_code", "silo_code", "title", "passage_text"]
+    assert list(materials.columns) == [
+        "subject_code", "silo_code", "title", "passage_text", "source_url", "provenance",
+    ]
+    assert len(materials) > 0
+    assert set(materials["provenance"]) == {"curated"}
+    assert materials["source_url"].str.startswith("https://").all()
+
+
+def test_load_topic_materials_is_empty_when_the_curated_csv_is_absent(workbook, monkeypatch, tmp_path):
+    monkeypatch.setattr(excel_loader, "CURATED_RESOURCES_CSV", tmp_path / "missing.csv")
+    materials = excel_loader.load_topic_materials()
     assert len(materials) == 0
+    assert "source_url" in materials.columns
 
 
 def test_dataset_path_raises_clearly_when_unset(monkeypatch):
