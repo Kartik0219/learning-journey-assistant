@@ -1,17 +1,14 @@
 import {
   BookOpen,
   BrainCircuit,
-  Calculator,
-  Library,
   LayoutDashboard,
-  ListChecks,
   LogOut,
   Menu,
   Sparkles,
   TableProperties,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Avatar } from './Avatar'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardPage } from './pages/DashboardPage'
@@ -24,15 +21,38 @@ import { StudyPlanPage } from './pages/StudyPlanPage'
 import { StudentProvider, useStudent } from './studentContext'
 import './App.css'
 
+// Four places to go. Quizzes and Resources are steps of the same journey as
+// the plan (plan → read → test), and What if? is the question that follows
+// "you are 9 marks short" - so they live as sub-tabs, not top-level tabs.
 const navigation = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/' },
   { label: 'Results', icon: TableProperties, to: '/results' },
-  { label: 'Study plan', icon: Sparkles, to: '/study-plan' },
-  { label: 'Quizzes', icon: ListChecks, to: '/quizzes' },
-  { label: 'Resources', icon: Library, to: '/resources' },
+  { label: 'Study', icon: Sparkles, to: '/study' },
   { label: 'Insight', icon: BrainCircuit, to: '/insight' },
-  { label: 'What if?', icon: Calculator, to: '/what-if' },
 ]
+
+const studyTabs = [
+  { label: 'Plan', to: '/study' },
+  { label: 'Quizzes', to: '/study/quizzes' },
+  { label: 'Resources', to: '/study/resources' },
+]
+const insightTabs = [
+  { label: 'Where I stand', to: '/insight' },
+  { label: 'What if?', to: '/insight/what-if' },
+]
+
+function Tabbed({ tabs, label, children }: { tabs: { label: string; to: string }[]; label: string; children: ReactNode }) {
+  return (
+    <>
+      <nav className="subnav" aria-label={label}>
+        {tabs.map((t) => (
+          <NavLink key={t.to} to={t.to} end className={({ isActive }) => (isActive ? 'subnav-item active' : 'subnav-item')}>{t.label}</NavLink>
+        ))}
+      </nav>
+      {children}
+    </>
+  )
+}
 
 function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -76,11 +96,16 @@ function AppShell() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/results" element={<ResultsOverviewPage />} />
-        <Route path="/study-plan" element={<StudyPlanPage />} />
-        <Route path="/quizzes" element={<QuizzesPage />} />
-        <Route path="/resources" element={<ResourcesPage />} />
-        <Route path="/insight" element={<InsightPage />} />
-        <Route path="/what-if" element={<WhatIfPage />} />
+        <Route path="/study" element={<Tabbed tabs={studyTabs} label="Study sections"><StudyPlanPage /></Tabbed>} />
+        <Route path="/study/quizzes" element={<Tabbed tabs={studyTabs} label="Study sections"><QuizzesPage /></Tabbed>} />
+        <Route path="/study/resources" element={<Tabbed tabs={studyTabs} label="Study sections"><ResourcesPage /></Tabbed>} />
+        <Route path="/insight" element={<Tabbed tabs={insightTabs} label="Insight sections"><InsightPage /></Tabbed>} />
+        <Route path="/insight/what-if" element={<Tabbed tabs={insightTabs} label="Insight sections"><WhatIfPage /></Tabbed>} />
+        {/* Old addresses keep working for bookmarks, the docs and the videos. */}
+        <Route path="/study-plan" element={<Navigate to="/study" replace />} />
+        <Route path="/quizzes" element={<Navigate to="/study/quizzes" replace />} />
+        <Route path="/resources" element={<Navigate to="/study/resources" replace />} />
+        <Route path="/what-if" element={<Navigate to="/insight/what-if" replace />} />
         <Route path="/ai-insight" element={<Navigate to="/insight" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
