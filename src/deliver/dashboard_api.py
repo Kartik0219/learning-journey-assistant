@@ -23,7 +23,7 @@ import re
 from sqlalchemy.orm import Session
 
 from src.connect.excel_loader import parse_silo_tags
-from src.db.models import LearningOutcome, MasteryScore, Student, StudyRecommendation, Subject, TopicMaterial
+from src.db.models import LearningOutcome, MasteryScore, Student, StudyRecommendation, TopicMaterial
 from src.estimate.quiz import latest_quiz_questions
 from src.security.authorization import Actor, require_student_access
 from src.security.consent import ensure_consent_active
@@ -247,57 +247,6 @@ def get_student_resources(session: Session, actor: Actor, student_id: int) -> di
         "student": {"id": student.id, "display_name": student.display_name},
         "subjects": subjects,
     }
-
-
-def get_resource_library(session: Session) -> dict:
-    """Every TopicMaterial in the system, grouped by subject then by SILO
-    (learning outcome) - the full study-material catalogue, not scoped to
-    any one student's mastery or subject enrolment like
-    `get_student_resources` is. Any signed-in user may browse it: it is
-    not personal student data, so no `require_student_access`/consent gate
-    applies here.
-    """
-    materials = (
-        session.query(TopicMaterial)
-        .join(Subject)
-        .order_by(Subject.code, TopicMaterial.learning_outcome_id, TopicMaterial.title)
-        .all()
-    )
-
-    by_subject: dict[str, dict[str, list[dict]]] = {}
-    silo_descriptions: dict[tuple[str, str], str | None] = {}
-    for material in materials:
-        silo_code = material.learning_outcome.code if material.learning_outcome else "General"
-        silo_descriptions[(material.subject.code, silo_code)] = (
-            material.learning_outcome.description if material.learning_outcome else None
-        )
-        by_silo = by_subject.setdefault(material.subject.code, {})
-        by_silo.setdefault(silo_code, []).append(
-            {
-                "title": material.title,
-                "passage_text": material.passage_text,
-                "source_url": material.source_url,
-                "provenance": material.provenance,
-                "resource_type": material.resource_type,
-            }
-        )
-
-    subjects = [
-        {
-            "code": code,
-            "silos": [
-                {
-                    "code": silo_code,
-                    "description": silo_descriptions.get((code, silo_code)),
-                    "materials": items,
-                }
-                for silo_code, items in sorted(by_silo.items())
-            ],
-        }
-        for code, by_silo in sorted(by_subject.items())
-    ]
-
-    return {"subjects": subjects}
 
 
 def get_student_results(session: Session, actor: Actor, student_id: int) -> dict:
