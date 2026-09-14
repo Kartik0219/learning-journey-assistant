@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { CheckCircle2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { BookOpen, CheckCircle2 } from 'lucide-react'
 import { api, humanise, masteryBand, masteryPct, type Outcome } from '../api'
+import { Dropdown } from '../Dropdown'
 import { useStudent } from '../studentContext'
 import { useApi } from '../useApi'
 import { PageError } from './PageError'
@@ -55,11 +56,15 @@ export function StudyPlanPage() {
   const { studentId, studentLabel } = useStudent()
   const { data, error, loading, reload } = useApi(() => api.dashboard(studentId), studentId)
 
+  const subjectCodes = useMemo(() => data?.subjects.map((s) => s.code) ?? [], [data])
+  const [subjectCode, setSubjectCode] = useState('')
+  const activeCode = subjectCodes.includes(subjectCode) ? subjectCode : subjectCodes[0]
+
   if (loading && !data) return <p className="page-status">Loading your study plan…</p>
   if (error) return <PageError error={error} />
 
   const planned = (data?.outcomes ?? [])
-    .filter((o) => o.recommendation && o.mastery_score !== null)
+    .filter((o) => o.recommendation && o.mastery_score !== null && (!activeCode || o.subject_code === activeCode))
     .sort((a, b) => (a.mastery_score ?? 0) - (b.mastery_score ?? 0))
 
   return (
@@ -69,6 +74,7 @@ export function StudyPlanPage() {
           <p className="eyebrow">{studentLabel} · study plan</p>
           <h1>What to study next</h1>
         </div>
+        {subjectCodes.length > 1 && <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={subjectCodes.map((code) => ({ value: code, label: code }))} onChange={setSubjectCode} />}
       </header>
       {planned.length === 0
         ? <p className="page-status">No study recommendations yet — they appear once your results have been analysed.</p>

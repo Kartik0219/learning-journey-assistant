@@ -1,5 +1,7 @@
-import { ExternalLink } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { BookOpen, ExternalLink } from 'lucide-react'
 import { api, masteryBand, type Material } from '../api'
+import { Dropdown } from '../Dropdown'
 import { useStudent } from '../studentContext'
 import { useApi } from '../useApi'
 import { PageError } from './PageError'
@@ -30,10 +32,14 @@ export function ResourcesPage() {
   const { studentId, studentLabel } = useStudent()
   const { data, error, loading } = useApi(() => api.resources(studentId), studentId)
 
+  const allSubjectCodes = useMemo(() => data?.subjects.map((s) => s.code) ?? [], [data])
+  const [subjectCode, setSubjectCode] = useState('')
+  const activeCode = allSubjectCodes.includes(subjectCode) ? subjectCode : allSubjectCodes[0]
+
   if (loading) return <p className="page-status">Loading resources…</p>
   if (error) return <PageError error={error} />
 
-  const subjects = data?.subjects ?? []
+  const subjects = (data?.subjects ?? []).filter((s) => !activeCode || s.code === activeCode)
   const total = subjects.reduce((n, s) => n + s.materials.length, 0)
   const anyCurated = subjects.some((s) => s.materials.some((m) => m.provenance === 'curated'))
   const focusCount = subjects.reduce((n, s) => n + s.materials.filter((m) => m.mastery_pct !== null && m.mastery_pct < 65).length, 0)
@@ -46,6 +52,7 @@ export function ResourcesPage() {
           <h1>What to read for each outcome</h1>
           {total > 0 && <p className="sub">{total} resources across {subjects.length} subject{subjects.length === 1 ? '' : 's'}, ordered by where you need them most{focusCount ? ` — ${focusCount} sit under outcomes below 65%` : ''}.</p>}
         </div>
+        {allSubjectCodes.length > 1 && <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={allSubjectCodes.map((code) => ({ value: code, label: code }))} onChange={setSubjectCode} />}
       </header>
 
       {anyCurated && (
