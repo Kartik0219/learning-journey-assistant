@@ -32,7 +32,7 @@ const navigation = [
   { label: 'Study plan', icon: Sparkles, to: '/study-plan' },
   { label: 'Quizzes', icon: ListChecks, to: '/quizzes' },
   { label: 'Resources', icon: Library, to: '/resources' },
-  { label: 'Library', icon: Layers, to: '/library' },
+  { label: 'Resource library', icon: Layers, to: '/library' },
   { label: 'Insight', icon: BrainCircuit, to: '/insight' },
   { label: 'What if?', icon: Calculator, to: '/what-if' },
 ]

@@ -29,7 +29,7 @@ export function LibraryPage() {
   const [subjectCode, setSubjectCode] = useState('')
   const activeCode = allSubjectCodes.includes(subjectCode) ? subjectCode : allSubjectCodes[0]
 
-  if (loading) return <p className="page-status">Loading the study material library…</p>
+  if (loading) return <p className="page-status">Loading the resource library…</p>
   if (error) return <PageError error={error} />
 
   const subject = data?.subjects.find((s) => s.code === activeCode)
@@ -39,7 +39,7 @@ export function LibraryPage() {
     <main className="page" id="library">
       <header className="page-head">
         <div>
-          <p className="eyebrow">study material library</p>
+          <p className="eyebrow">resource library</p>
           <h1>Every resource, by SILO</h1>
           {subject && <p className="sub">{totalMaterials} resources across {subject.silos.length} SILO{subject.silos.length === 1 ? '' : 's'} in {subject.code}.</p>}
         </div>
