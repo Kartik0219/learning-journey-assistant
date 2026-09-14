@@ -35,9 +35,9 @@ them in the first place.
 
 ## 2. Signing in
 
-![Landing page](images/app-landing.png)
+![Sign-in page](images/app-login.png)
 
-From the landing page, choose **Log in**, then enter your student number
+Opening the app takes you to the sign-in page. Enter your student number
 and password.
 
 | Where | Student number | Password |
@@ -57,8 +57,8 @@ Use **Log out** in the top-right when you are finished.
 ## 3. Using the app
 
 Once signed in you land on the **Dashboard**. The navigation across the
-top (or the tab bar at the bottom on a phone) gives you six places to go:
-Dashboard, Results, My Plan, Quizzes, Resources and AI Insight.
+top (or the menu button on a phone) gives you six places to go:
+Dashboard, Results, Study plan, Quizzes, Resources and AI Insight.
 
 ### 3.1 Dashboard — where you stand
 
@@ -66,17 +66,17 @@ Dashboard, Results, My Plan, Quizzes, Resources and AI Insight.
 
 The dashboard answers "how am I doing, and where should I look first?"
 
-- **Overall mastery** — a single percentage across everything recorded
-  for you.
-- **Subjects / Outcomes tracked / Need attention** — how much is being
-  measured, and how many outcomes are currently flagged as weak.
-- **Priority topics** — the specific learning outcomes (SILOs) to work on
-  first, each with its own percentage. Start at the top of this list.
-- **Subjects overview** — a mastery ring per subject, so you can see
-  whether a problem is subject-wide or isolated.
-- **Per-outcome cards** — each SILO with its mastery score. **Click a card
-  to expand it** and see the evidence: which assessment results produced
-  that number.
+- **Subject picker** — switch between your subjects, top right.
+- **Summary row** — the weighted subject total, its performance band
+  (Fail, Pass, Credit, Distinction, High Distinction), how many outcomes
+  are focus areas, and a chart of your mastery after each assessment.
+- **Mastery by learning outcome** — a coloured bar per SILO: at risk,
+  developing, proficient or mastered.
+- **Evidence** — select an outcome to see every assessment that tests it,
+  with its weight, score and feedback, and the calculation behind the
+  percentage.
+- **Next steps** and **Priority topics** — what to do for the selected
+  outcome, and your weakest outcomes across every subject.
 
 Each outcome's mastery is the **weighted average** of the assessments that
 test it, using each assessment's weight — so a 40% exam counts for more
@@ -101,7 +101,7 @@ assessment:
 The **Weighted total** next to each subject name adds up the weighted
 scores — it is your subject total.
 
-### 3.3 My Plan — what to do next
+### 3.3 Study plan — what to do next
 
 ![Study plan](images/app-plan.png)
 
