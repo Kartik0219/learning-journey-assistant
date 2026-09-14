@@ -58,7 +58,7 @@ Use **Log out** in the top-right when you are finished.
 
 Once signed in you land on the **Dashboard**. The navigation across the
 top (or the menu button on a phone) gives you six places to go:
-Dashboard, Results, Study plan, Quizzes, Resources and AI Insight.
+Dashboard, Results, Study plan, Quizzes, Resources, Insight and What if?.
 
 ### 3.1 Dashboard — where you stand
 
@@ -155,19 +155,50 @@ publisher's site. Your subject's own readings on the LMS always take
 priority; a coordinator can replace the curated list with official material
 at any time (System Maintenance Document §9).
 
-### 3.6 AI Insight — optional
+### 3.6 Insight — where you stand, in plain words
 
-![AI insight](images/app-ai-insight.png)
+![Insight](images/app-insight.png)
 
-A written analysis of your strengths and gaps from a large language model:
-each learning outcome with a status (Mastered, On Track or Focus Area), a
-quote from your feedback as evidence, and a few concrete study steps.
+A written reading of your results, composed by the app from your own
+marks — **no AI involved, so it is always available**. It gives you:
 
-It is **optional**: the rest of the app runs on a local statistical method
-with no external AI service. If AI is not enabled, or the free daily quota
-is used up, the page tells you so — that is expected behaviour, not a
-fault. Treat it as a second opinion; your Dashboard remains the source of
-truth.
+- a one-line headline across your subjects (average total, band, strongest
+  and weakest subject);
+- for each subject, a short paragraph: your weighted total and band, how
+  far you are from the next band, your weakest outcome, and which
+  assessment carries the most weight ("every 10 marks there moves your
+  total by 4");
+- **This week** — three or four concrete steps built from your lowest
+  outcome, its resource, its quiz and your weakest subject's heaviest
+  assessment;
+- **What your markers keep saying** — phrases that recur across your
+  feedback comments, how often, and what to do about each.
+
+Every sentence is arithmetic on numbers you can check on Results.
+
+At the bottom, **Optional: an AI second opinion** lets you ask a large
+language model for its reading of the same results. It is slower, gives up
+after 30 seconds, and can be unavailable when the free daily quota is used
+up — none of which affects the written insight above it.
+
+### 3.7 What if? — "what do I need?"
+
+![What if](images/app-what-if.png)
+
+For each subject, pick the grade you are aiming for (Pass, Credit,
+Distinction, High Distinction). The page shows:
+
+- your **actual total** next to a **what-if total** that updates as you
+  type different marks into any assessment;
+- the **easiest single route** — the one mark on one assessment that would
+  get you there with everything else unchanged, and how many more marks
+  that is than you got;
+- **or spread it out** — the smaller lift needed on every assessment.
+
+Assessments not yet marked are flagged, so you can type an expected mark
+and see where it lands you. Nothing you type is saved or sent anywhere.
+Bands use La Trobe's thresholds on the weighted total; official grades may
+include hurdles and moderation the calculator does not know about.
 
 ---
 
@@ -179,7 +210,7 @@ truth.
 | "Incorrect student number or password" | Use your student number as both fields on the demo, e.g. `STU0001` / `STU0001`. `DEMO0001` only exists on a local copy without the dataset |
 | "Forbidden" | You tried to open another student's record. You can only see your own |
 | Dashboard loads but every score is empty | Your results have not been processed yet, or consent is not active for your record |
-| AI Insight shows a message instead of an analysis | Expected when AI is off or the daily free quota is used up (§3.6) |
+| The optional AI second opinion on Insight shows a message instead of an analysis | Expected when AI is off, the daily free quota is used up, or it took longer than 30 seconds. The written insight above it never depends on AI (§3.6) |
 | A page looks cramped on your phone | The layout is responsive, but the dashboard is easiest to read on a larger screen or in landscape |
 
 ---

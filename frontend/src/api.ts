@@ -103,6 +103,32 @@ export interface AiInsight {
   }
 }
 
+export interface InsightSubject {
+  code: string
+  name: string | null
+  total: number | null
+  band: string
+  tone: MasteryStatus | 'neutral'
+  weighted: boolean
+  assessments_counted: number
+  weakest_outcomes: { code: string; mastery_pct: number; description: string }[]
+  biggest_lever: { assessment: string; weight: number; score: number } | null
+  paragraphs: string[]
+}
+
+export interface Insight {
+  student: { id: number; display_name: string }
+  method: 'deterministic'
+  generated_from: { subjects: number; assessments: number }
+  headline: string
+  average_total: number | null
+  average_band: string
+  average_tone: MasteryStatus | 'neutral'
+  subjects: InsightSubject[]
+  themes: { label: string; count: number; advice: string }[]
+  this_week: string[]
+}
+
 export class ApiError extends Error {
   status: number
   code: string
@@ -133,7 +159,11 @@ export const api = {
   dashboard: (studentId: number) => request<Dashboard>(`/api/students/${studentId}/dashboard`),
   results: (studentId: number) => request<Results>(`/api/students/${studentId}/results`),
   resources: (studentId: number) => request<Resources>(`/api/students/${studentId}/resources`),
-  aiInsight: (studentId: number) => request<AiInsight>(`/api/students/${studentId}/ai-insight`),
+  insight: (studentId: number) => request<Insight>(`/api/students/${studentId}/insight`),
+  // The LLM call can stall on a cold host or a saturated free tier; give
+  // up after 30 s so the page never hangs on an optional extra.
+  aiInsight: (studentId: number) =>
+    request<AiInsight>(`/api/students/${studentId}/ai-insight`, { signal: AbortSignal.timeout(30_000) }),
   markPractised: (recommendationId: number) =>
     request<{ ok: boolean }>(`/api/recommendations/${recommendationId}/practice`, {
       method: 'POST',

@@ -23,6 +23,7 @@ from src.db.database import get_session
 from src.db.models import Student, StudyRecommendation, Subject
 from src.deliver.ai_insight_api import get_ai_insight
 from src.deliver.dashboard_api import get_student_dashboard, get_student_resources
+from src.deliver.insight_api import get_student_insight
 from src.estimate.mastery import record_engagement
 from src.security.authorization import Actor, AuthorizationError, Role, require_student_access
 from src.security.consent import ConsentError, ensure_consent_active
@@ -81,6 +82,15 @@ def resources(student_id: int):
     actor = _actor()
     with get_session() as db:
         return jsonify(get_student_resources(db, actor, student_id))
+
+
+@api.get("/students/<int:student_id>/insight")
+def insight(student_id: int):
+    """Plain-English reading of the student's results, computed from their
+    own marks - deterministic and always available, unlike the LLM page."""
+    actor = _actor()
+    with get_session() as db:
+        return jsonify(get_student_insight(db, actor, student_id))
 
 
 @api.get("/students/<int:student_id>/ai-insight")
