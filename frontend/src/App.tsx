@@ -3,6 +3,7 @@ import {
   BrainCircuit,
   Calculator,
   Library,
+  Layers,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -17,6 +18,7 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardPage } from './pages/DashboardPage'
 import { InsightPage } from './pages/InsightPage'
 import { WhatIfPage } from './pages/WhatIfPage'
+import { LibraryPage } from './pages/LibraryPage'
 import { QuizzesPage } from './pages/QuizzesPage'
 import { ResourcesPage } from './pages/ResourcesPage'
 import { ResultsOverviewPage } from './pages/ResultsOverviewPage'
@@ -30,6 +32,7 @@ const navigation = [
   { label: 'Study plan', icon: Sparkles, to: '/study-plan' },
   { label: 'Quizzes', icon: ListChecks, to: '/quizzes' },
   { label: 'Resources', icon: Library, to: '/resources' },
+  { label: 'Library', icon: Layers, to: '/library' },
   { label: 'Insight', icon: BrainCircuit, to: '/insight' },
   { label: 'What if?', icon: Calculator, to: '/what-if' },
 ]
@@ -79,6 +82,7 @@ function AppShell() {
         <Route path="/study-plan" element={<StudyPlanPage />} />
         <Route path="/quizzes" element={<QuizzesPage />} />
         <Route path="/resources" element={<ResourcesPage />} />
+        <Route path="/library" element={<LibraryPage />} />
         <Route path="/insight" element={<InsightPage />} />
         <Route path="/what-if" element={<WhatIfPage />} />
         <Route path="/ai-insight" element={<Navigate to="/insight" replace />} />

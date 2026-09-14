@@ -22,7 +22,7 @@ from flask import Blueprint, abort, jsonify, request, session
 from src.db.database import get_session
 from src.db.models import Student, StudyRecommendation, Subject
 from src.deliver.ai_insight_api import get_ai_insight
-from src.deliver.dashboard_api import get_student_dashboard, get_student_resources
+from src.deliver.dashboard_api import get_student_dashboard, get_student_resources, get_resource_library
 from src.deliver.insight_api import get_student_insight
 from src.estimate.mastery import record_engagement
 from src.security.authorization import Actor, AuthorizationError, Role, require_student_access
@@ -82,6 +82,16 @@ def resources(student_id: int):
     actor = _actor()
     with get_session() as db:
         return jsonify(get_student_resources(db, actor, student_id))
+
+
+@api.get("/library")
+def library():
+    """Full study-material catalogue, all subjects/SILOs - any signed-in
+    user may browse it (not personal student data, so no per-student
+    access/consent gate, unlike /resources)."""
+    _actor()
+    with get_session() as db:
+        return jsonify(get_resource_library(db))
 
 
 @api.get("/students/<int:student_id>/insight")

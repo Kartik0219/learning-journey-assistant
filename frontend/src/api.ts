@@ -91,6 +91,23 @@ export interface Resources {
   subjects: { code: string; materials: Material[] }[]
 }
 
+export interface LibraryMaterial {
+  title: string
+  passage_text: string
+  source_url: string | null
+  provenance: 'subject' | 'curated'
+}
+
+export interface LibrarySilo {
+  code: string
+  description: string | null
+  materials: LibraryMaterial[]
+}
+
+export interface Library {
+  subjects: { code: string; silos: LibrarySilo[] }[]
+}
+
 export interface AiInsight {
   student: { id: number; display_name: string }
   enabled: boolean
@@ -159,6 +176,7 @@ export const api = {
   dashboard: (studentId: number) => request<Dashboard>(`/api/students/${studentId}/dashboard`),
   results: (studentId: number) => request<Results>(`/api/students/${studentId}/results`),
   resources: (studentId: number) => request<Resources>(`/api/students/${studentId}/resources`),
+  library: () => request<Library>('/api/library'),
   insight: (studentId: number) => request<Insight>(`/api/students/${studentId}/insight`),
   // The LLM call can stall on a cold host or a saturated free tier; give
   // up after 30 s so the page never hangs on an optional extra.
