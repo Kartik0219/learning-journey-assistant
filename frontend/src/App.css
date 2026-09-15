@@ -324,3 +324,29 @@
   .outcome { grid-template-columns: 1fr; }
   .outcome-pct { justify-self: start; }
 }
+
+
+/*@media (max-width: 900px) {*/
+/*  .topbar { padding: 11px 16px; }*/
+/*  .menu-toggle { display: none; }*/
+/*  !* Bottom tab bar: four tabs, thumb-reachable, like every phone app. *!*/
+/*  .navbar { background: var(--surface); border-bottom: 0; border-top: 1px solid var(--line); bottom: 0; box-shadow: 0 -6px 20px var(--shadow); display: flex; justify-content: space-around; left: 0; overflow: visible; padding: 4px 6px calc(4px + env(safe-area-inset-bottom)); position: fixed; right: 0; z-index: 30; }*/
+/*  .nav-item { border-bottom: 0; border-radius: 8px; flex: 1; flex-direction: column; font-size: 11px; gap: 3px; padding: 7px 4px 6px; text-align: center; }*/
+/*  .nav-item svg { height: 20px; width: 20px; }*/
+/*  .nav-item.active { background: var(--brand-soft); color: var(--brand-dark); }*/
+/*  .banner { padding: 8px 16px; }*/
+/*  .page { padding: 20px 16px 96px; }*/
+/*  .subnav { padding: 0 16px; }*/
+/*  .grid2, .plan-grid { grid-template-columns: 1fr; }*/
+/*}*/
+/*@media (max-width: 720px) {*/
+/*  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }*/
+/*  .trend { grid-column: 1 / -1; }*/
+/*}*/
+/*@media (max-width: 560px) {*/
+/*  .topbar-user .student-pill { display: none; }*/
+/*  .page h1 { font-size: 25px; }*/
+/*  .outcome { grid-template-columns: 1fr; }*/
+/*  .outcome-pct { justify-self: start; }*/
+/*}*/
+
