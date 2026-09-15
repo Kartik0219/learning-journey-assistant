@@ -17,6 +17,7 @@ import { Dropdown } from '../Dropdown'
 import { useStudent } from '../studentContext'
 import { useApi } from '../useApi'
 import { PageError } from './PageError'
+import { MiniBars, MiniDots, MiniRing, MiniScale, QuickActions, greeting } from './Minis'
 import { TodayStrip } from './TodayStrip'
 import { TrendChart } from './TrendChart'
 
@@ -144,33 +145,44 @@ export function DashboardPage() {
     <main className="page" id="dashboard">
       <header className="page-head">
         <div>
-          <p className="eyebrow">{studentLabel} · mastery dashboard</p>
+          <p className="eyebrow">{greeting()} · {studentLabel}</p>
           <h1>Where you stand in <span className="title-subject">{activeCode}</span></h1>
         </div>
         {subjectCodes.length > 1 && <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={subjectCodes.map((code) => ({ value: code, label: code }))} onChange={setSubjectCode} />}
       </header>
 
       <TodayStrip />
+      <QuickActions />
 
       <section className="stats" aria-label="Subject summary">
         <article className="stat">
-          <span className="stat-value">{total === null ? '—' : fmt(total, 2)}</span>
+          <span className="stat-row">
+            <span className="stat-value">{total === null ? '—' : fmt(total, 2)}</span>
+            {total !== null && <MiniRing value={total} />}
+          </span>
           <span className="stat-label">{usesWeights(rows) ? 'Weighted subject total' : 'Average score'}</span>
         </article>
         <article className="stat">
           {band ? <span className={`chip ${band.status}`}>{band.label}</span> : <span className="stat-value">—</span>}
+          {total !== null && <MiniScale value={total} />}
           <span className="stat-label">Performance band
             <span className="tip"><button className="tip__trigger" type="button" aria-label="How the performance band is decided" aria-describedby="band-tip"><Info size={13} aria-hidden="true" /></button>
               <span className="tip__pop" id="band-tip" role="tooltip">The subject total mapped to a grade band: under 50 Fail, 50–59 Pass, 60–69 Credit, 70–79 Distinction, 80+ High Distinction. Formative only — not an official grade.</span></span>
           </span>
         </article>
         <article className="stat">
-          <span className="stat-value">{focusAreas}</span>
-          <span className="stat-label">Focus areas (under {FOCUS_THRESHOLD}%)</span>
+          <span className="stat-row">
+            <span className="stat-value">{focusAreas}</span>
+            <MiniDots pcts={outcomes.map((o) => masteryPct(o) ?? 0)} />
+          </span>
+          <span className="stat-label">Focus areas (under {FOCUS_THRESHOLD}%) · {outcomes.length} outcomes</span>
         </article>
         <article className="stat">
-          <span className="stat-value">{rows.length}</span>
-          <span className="stat-label">Assessments analysed</span>
+          <span className="stat-row">
+            <span className="stat-value">{rows.length}</span>
+            <MiniBars scores={rows.map((r) => r.score)} />
+          </span>
+          <span className="stat-label">Assessments analysed · scores in order</span>
         </article>
         {rows.length > 1 && <TrendChart rows={rows} />}
       </section>
