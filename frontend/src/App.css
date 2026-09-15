@@ -156,6 +156,10 @@
 .page .today .today-sub strong { color: #fff; }
 .today-step { align-items: start; color: rgba(255,255,255,.92); display: grid; font-size: 14px; gap: 10px; grid-template-columns: 26px 1fr; margin: 4px 0 0; }
 .today-step .step-n { background: var(--brand); }
+.today-switch { color: rgba(255,255,255,.8); font-size: 13px; margin: 2px 0 0; }
+.page .today .today-switch strong { color: #fff; }
+.today .link-btn { align-items: center; background: none; border: 0; color: #FF9AA7; cursor: pointer; display: inline-flex; font: inherit; font-weight: 600; gap: 4px; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+.today .link-btn:hover { color: #fff; }
 .today-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .today-actions .btn { text-decoration: none; }
 .today-actions .btn.ghost { background: transparent; border-color: rgba(255,255,255,.35); color: #fff; }

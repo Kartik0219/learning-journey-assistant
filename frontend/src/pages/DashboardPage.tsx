@@ -151,7 +151,7 @@ export function DashboardPage() {
         {subjectCodes.length > 1 && <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={subjectCodes.map((code) => ({ value: code, label: code }))} onChange={setSubjectCode} />}
       </header>
 
-      <TodayStrip />
+      <TodayStrip activeCode={activeCode} onPickSubject={setSubjectCode} />
       <QuickActions />
 
       <section className="stats" aria-label="Subject summary">

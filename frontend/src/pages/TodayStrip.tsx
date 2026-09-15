@@ -1,4 +1,4 @@
-import { ArrowRight, Calculator } from 'lucide-react'
+import { ArrowRight, Calculator, Eye } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api, type InsightSubject } from '../api'
 import { useStudent } from '../studentContext'
@@ -27,12 +27,24 @@ function Gauge({ value, tone, label }: { value: number; tone: string; label: str
   )
 }
 
+interface TodayStripProps {
+  /** The subject the rest of the dashboard is showing (the picker's value). */
+  activeCode?: string
+  /** Switch the dashboard's subject picker - offered when the strip's
+   *  subject is not the one on screen, so the two never look out of step. */
+  onPickSubject?: (code: string) => void
+}
+
 /**
  * The ten-second view. A student between classes needs one number that
  * matters this week, one lever, and one thing to do - not a report. All of
  * it comes from the Insight computation, so it is deterministic and instant.
+ *
+ * The strip always shows the *most urgent* subject (lowest total across
+ * every subject), which may differ from the subject picked for the page -
+ * it says so, and offers to switch the page to match.
  */
-export function TodayStrip() {
+export function TodayStrip({ activeCode, onPickSubject }: TodayStripProps = {}) {
   const { studentId } = useStudent()
   const { data } = useApi(() => api.insight(studentId), `insight-${studentId}`)
   if (!data) return null
@@ -43,12 +55,13 @@ export function TodayStrip() {
   const up = nextBand(weakest.total)
   const lever = weakest.biggest_lever
   const step = data.this_week[0]
+  const differs = Boolean(activeCode && onPickSubject && weakest.code !== activeCode)
 
   return (
     <section className={`today tone-${weakest.tone}`} aria-label="What matters today">
       <Gauge value={weakest.total} tone={weakest.tone} label={weakest.band} />
       <div className="today-main">
-        <p className="eyebrow">Today</p>
+        <p className="eyebrow">Today · most urgent of your {scored.length} subject{scored.length === 1 ? '' : 's'}</p>
         <h2 className="today-line">
           {up
             ? <><span className="title-subject">{weakest.code}</span> is <strong>{up.gap}</strong> mark{up.gap === 1 ? '' : 's'} off a {up.label}.</>
@@ -60,6 +73,14 @@ export function TodayStrip() {
           </p>
         )}
         {step && <p className="today-step"><span className="step-n">1</span><span>{step}</span></p>}
+        {differs && (
+          <p className="today-switch">
+            This page is showing <strong>{activeCode}</strong>.{' '}
+            <button type="button" className="link-btn" onClick={() => onPickSubject?.(weakest.code)}>
+              <Eye size={14} aria-hidden="true" /> Show {weakest.code} instead
+            </button>
+          </p>
+        )}
       </div>
       <div className="today-actions">
         <Link className="btn" to="/study">Start studying <ArrowRight size={15} aria-hidden="true" /></Link>
