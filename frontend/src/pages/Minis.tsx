@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Calculator, Library, ListChecks, Sparkles } from 'lucide-react'
 import { masteryBand, performanceBand, type MasteryStatus } from '../api'
+import { MELBOURNE, melbourneHour } from '../local'
 
 /* Small inline visuals for the dashboard stat cards. Each draws only from
    data already on screen, so the picture never says more than the number. */
@@ -71,10 +72,11 @@ export function QuickActions() {
   )
 }
 
-/** "Good morning" by the viewer's clock; formative tone, no name (anonymised data). */
+/** "Good morning" on Melbourne time (the university's clock, not the device's);
+ *  formative tone, no name (anonymised data). */
 export function greeting(now = new Date()): string {
-  const h = now.getHours()
+  const h = melbourneHour(now)
   const part = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
-  const day = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
+  const day = new Intl.DateTimeFormat('en-AU', { timeZone: MELBOURNE, weekday: 'long', day: 'numeric', month: 'long' }).format(now)
   return `${part} · ${day}`
 }

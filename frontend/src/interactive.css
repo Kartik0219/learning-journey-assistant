@@ -11,7 +11,8 @@
 @media (max-width: 720px) { .topbar .clock-date { display: none; } }
 
 /* Try it: sliders under the Today strip */
-.tryit { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); border-radius: 10px; color: #fff; display: grid; gap: 10px; grid-column: 1 / -1; padding: 12px 14px; }
+.tryit { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); border-radius: 10px; color: #fff; display: grid; flex: 1 1 100%; gap: 10px; padding: 12px 14px; }
+.subject-picker { display: grid; gap: 4px; justify-items: end; }
 .tryit-head { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0; }
 .tryit-rows { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
 .tryit-row { align-items: center; display: grid; gap: 4px 12px; grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr) 42px; }
