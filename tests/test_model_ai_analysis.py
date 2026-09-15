@@ -233,6 +233,43 @@ def test_gemini_transport_error_becomes_ai_analysis_error(monkeypatch):
         _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="k"))
 
 
+def test_gemini_disables_thinking_and_gives_the_answer_the_whole_budget(monkeypatch):
+    """gemini-flash-latest is a thinking model: reasoning tokens count against
+    maxOutputTokens, which on the live demo left no room for the answer at
+    all. Thinking is off and the budget is for the JSON."""
+    import requests
+
+    captured = {}
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        captured.update(body=json)
+        return _FakeResponse(_gemini_ok_payload(_VALID_JSON))
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="k"))
+
+    cfg = captured["body"]["generationConfig"]
+    assert cfg["thinkingConfig"] == {"thinkingBudget": 0}
+    assert cfg["maxOutputTokens"] >= 8192
+    assert cfg["responseMimeType"] == "application/json"
+
+    # Retired 1.x models reject thinkingConfig with HTTP 400, so it is omitted.
+    _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="k", llm_model="gemini-1.5-flash"))
+    assert "thinkingConfig" not in captured["body"]["generationConfig"]
+
+
+def test_gemini_empty_text_reports_finish_reason(monkeypatch):
+    """A candidate whose parts carry no text (budget exhausted by thinking)
+    must explain itself, not surface as 'No JSON object found'."""
+    import requests
+
+    starved = {"candidates": [{"content": {"parts": [{"text": ""}]}, "finishReason": "MAX_TOKENS"}]}
+    monkeypatch.setattr(requests, "post", lambda *a, **kw: _FakeResponse(starved))
+
+    with pytest.raises(AIAnalysisError, match="MAX_TOKENS"):
+        _call_gemini("p", _settings(llm_provider="gemini", llm_api_key="k"))
+
+
 def test_gemini_blocked_or_empty_candidate_becomes_ai_analysis_error(monkeypatch):
     """A safety-filtered response has no candidate content. That must be a
     clean error, never an IndexError leaking out of the provider layer."""
