@@ -129,6 +129,10 @@ DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
 
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
+# Output budget for the diagnostic JSON. 2048 was enough for the answer
+# alone, but on a thinking model the same budget also pays for reasoning.
+GEMINI_MAX_OUTPUT_TOKENS = 8192
+
 # Gemini's free tier returns 503 ("model overloaded") a meaningful share of
 # the time - in testing, five consecutive 503s before a success was normal,
 # so a single-shot call would surface an error to the student on a good
@@ -349,12 +353,22 @@ def _call_gemini(prompt: str, settings: Settings) -> str:
         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
-            "maxOutputTokens": 2048,
+            # gemini-flash-latest now resolves to a *thinking* model (2.5
+            # Flash), whose hidden reasoning tokens are charged against this
+            # budget. With three subjects and 13 SILOs in the prompt, a 2048
+            # budget was spent on thinking before any answer was written: the
+            # candidate came back finishReason=MAX_TOKENS with no text part,
+            # and the student saw "No JSON object found in the model
+            # response". Thinking adds nothing to a fixed-schema extraction,
+            # so it is switched off, and the budget is now for the answer.
+            "maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS,
             # Ask for raw JSON so the response needs no fence-stripping.
             # parse_diagnostic_json still validates it either way.
             "responseMimeType": "application/json",
         },
     }
+    if _gemini_supports_thinking_config(model):
+        body["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
 
     url = f"{GEMINI_API_BASE}/{model}:generateContent"
     headers = {
@@ -415,7 +429,24 @@ def _call_gemini(prompt: str, settings: Settings) -> str:
             f"Gemini returned no usable candidate content: {payload}"
         ) from exc
 
-    return "".join(part.get("text", "") for part in parts)
+    text = "".join(part.get("text", "") for part in parts)
+    if not text.strip():
+        # A candidate with parts but no text: typically the output budget
+        # ran out (finishReason MAX_TOKENS) before the answer started. Say
+        # so, rather than letting the parser report a missing JSON object.
+        reason = payload["candidates"][0].get("finishReason", "unknown")
+        raise AIAnalysisError(
+            f"Gemini returned an empty answer (finishReason={reason}); "
+            "try again in a moment."
+        )
+    return text
+
+
+def _gemini_supports_thinking_config(model: str) -> bool:
+    """thinkingConfig is accepted by Gemini 2.5+ and the *-latest aliases;
+    the retired 1.x models reject it with HTTP 400, so it is not sent to
+    them."""
+    return not any(tag in model for tag in ("1.0", "1.5"))
 
 
 def _gemini_error_body(response) -> dict:
