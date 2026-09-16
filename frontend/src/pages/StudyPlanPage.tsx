@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BookOpen, CheckCircle2 } from 'lucide-react'
 import { api, humanise, masteryBand, masteryPct, type Outcome } from '../api'
 import { Dropdown } from '../Dropdown'
@@ -9,9 +9,24 @@ import { PageError } from './PageError'
 function PlanCard({ outcome, onPractised }: { outcome: Outcome; onPractised: () => void }) {
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
+  const [justBoosted, setJustBoosted] = useState(false)
   const pct = masteryPct(outcome) ?? 0
   const { status, label } = masteryBand(pct)
   const rec = outcome.recommendation!
+  const prevPct = useRef(pct)
+
+  // Once the reload after marking practised comes back with a higher
+  // mastery number, pulse it briefly - the confirmation a slider gets for
+  // free, but this button's effect only shows up after a round trip.
+  useEffect(() => {
+    if (done && pct > prevPct.current) {
+      setJustBoosted(true)
+      const id = setTimeout(() => setJustBoosted(false), 1600)
+      prevPct.current = pct
+      return () => clearTimeout(id)
+    }
+    prevPct.current = pct
+  }, [pct, done])
 
   async function practise() {
     setSaving(true)
@@ -31,7 +46,7 @@ function PlanCard({ outcome, onPractised }: { outcome: Outcome; onPractised: () 
           <h2>{outcome.code} <span className="silo-tag">{outcome.subject_code}</span></h2>
           <p className="sub">{outcome.description}</p>
         </div>
-        <span className="outcome-pct">{pct.toFixed(1)}% <span className={`chip ${status}`}>{label}</span></span>
+        <span className={justBoosted ? 'outcome-pct boosted' : 'outcome-pct'}>{pct.toFixed(1)}% <span className={`chip ${status}`}>{label}</span></span>
       </div>
       <div className="method-row"><span className="chip brand">{humanise(rec.method)}</span><span className="sub">recommended study method</span></div>
       {rec.source_title
@@ -43,10 +58,11 @@ function PlanCard({ outcome, onPractised }: { outcome: Outcome; onPractised: () 
           </div>
         )
         : <p className="empty-note">{rec.material_text}</p>}
-      <div>
+      <div className="practise-row">
         <button className="btn" type="button" disabled={saving || done} onClick={practise}>
           <CheckCircle2 size={15} aria-hidden="true" /> {done ? 'Marked as practised' : saving ? 'Saving…' : 'Mark as practised'}
         </button>
+        {justBoosted && <span className="boost-note">Boost applied ↑</span>}
       </div>
     </section>
   )

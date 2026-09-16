@@ -68,6 +68,7 @@ python -m src.deliver.app       # then open http://127.0.0.1:5000  (DEMO0001 / D
 |---|---|
 | [Run in VS Code](docs/RUN_IN_VSCODE.md) | Step-by-step: download and run the app on your own computer |
 | [User Guide](docs/USER_GUIDE.md) | Students using the app |
+| [Code Walkthrough](docs/CODE_WALKTHROUGH.md) | How the important modules work and why they exist — read this first |
 | [System Maintenance](docs/SYSTEM_MAINTENANCE.md) | Architecture, deployment, operations, troubleshooting, known limitations |
 | [Environment Setup](docs/ENVIRONMENT_SETUP.md) | Running it locally for the first time |
 | [Data Dictionary](docs/DATA_DICTIONARY.md) | Field-by-field data definitions |

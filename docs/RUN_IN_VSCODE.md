@@ -5,7 +5,7 @@ Assistant and run it on their own computer. No experience with the project
 needed. Takes about 10 minutes the first time.
 
 > **Just want to look at it?** Open the live demo instead — nothing to install:
-> https://learning-journey-assistant.onrender.com (the first load can take up to a minute).
+> https://learning-journey-assistant.onrender.com.
 
 ---
 
