@@ -7,7 +7,7 @@ and "zero gaps" in a single small dataset.
 """
 
 from __future__ import annotations
-
+from src.connect.excel_loader import parse_silo_tags
 from src.db.database import get_session
 from src.db.models import AssessmentResult, LearningOutcome, Student
 from src.model.silo_mapping import (
@@ -226,3 +226,33 @@ def test_feedback_text_path_still_used_when_silo_tags_text_is_unset(seeded_db):
         gaps = extract_skill_gaps(session, result)
         assert len(gaps) == 1
         assert gaps[0].confidence != SILO_TAG_CONFIDENCE
+
+def test_parse_silo_tags_normalises_case_and_whitespace():
+    result = parse_silo_tags("  silo1:  Understands DNA replication  ")
+
+    assert result == [("SILO1", "Understands DNA replication")]
+
+
+def test_parse_silo_tags_skips_malformed_segments_but_keeps_valid_segments():
+    result = parse_silo_tags(
+        "SILO1: Understands DNA replication; malformed segment; SILO2: Applies PCR"
+    )
+
+    assert result == [
+        ("SILO1", "Understands DNA replication"),
+        ("SILO2", "Applies PCR"),
+    ]
+
+
+def test_parse_silo_tags_skips_empty_descriptions():
+    result = parse_silo_tags(
+        "SILO1: ; SILO2: Applies PCR; SILO3:"
+    )
+
+    assert result == [("SILO2", "Applies PCR")]
+
+
+def test_parse_silo_tags_returns_empty_list_for_only_malformed_input():
+    result = parse_silo_tags("not a silo tag; another malformed segment")
+
+    assert result == []
