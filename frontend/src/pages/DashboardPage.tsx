@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { BookOpen, Info } from 'lucide-react'
 import {
   api,
@@ -122,11 +122,39 @@ export function DashboardPage() {
     [dash.data, activeCode],
   )
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [revealed, setRevealed] = useState(false)
+  const evidenceRef = useRef<HTMLDivElement>(null)
 
   // Open the evidence for the weakest outcome whenever the subject changes.
   useEffect(() => {
     if (outcomes.length) setSelectedId([...outcomes].sort((a, b) => (a.mastery_score ?? 0) - (b.mastery_score ?? 0))[0].id)
   }, [outcomes])
+
+  // Bars grow in from empty whenever the subject changes, instead of just
+  // appearing at their final width - a small cue that this is fresh data.
+  useEffect(() => {
+    setRevealed(false)
+    const id = requestAnimationFrame(() => setRevealed(true))
+    return () => cancelAnimationFrame(id)
+  }, [activeCode])
+
+  // Left/right arrow keys step through subjects, as long as the focus is not
+  // in a text field, textarea or select (so typing "→" in a search box never
+  // gets hijacked).
+  useEffect(() => {
+    if (subjectCodes.length < 2) return
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement | null)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement | null)?.isContentEditable) return
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const i = subjectCodes.indexOf(activeCode)
+      if (i === -1) return
+      const next = subjectCodes[(i + (e.key === 'ArrowRight' ? 1 : -1) + subjectCodes.length) % subjectCodes.length]
+      setSubjectCode(next)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [subjectCodes, activeCode])
 
   if (dash.loading || res.loading) return <p className="page-status">Loading your dashboard…</p>
   if (dash.error) return <PageError error={dash.error} />
@@ -141,6 +169,19 @@ export function DashboardPage() {
   const selected = outcomes.find((o) => o.id === selectedId) ?? outcomes[0]
   const tagged = (o: Outcome) => rows.filter((r) => r.silo_codes.includes(o.code))
 
+  // Jump to an assessment picked on the trend chart: select the weakest
+  // outcome it evidences (usually the one the student is looking at the
+  // chart to understand), then scroll the evidence panel into view.
+  function jumpToAssessment(row: ResultRow) {
+    const candidates = outcomes.filter((o) => row.silo_codes.includes(o.code))
+    const target = [...candidates].sort((a, b) => (a.mastery_score ?? 0) - (b.mastery_score ?? 0))[0]
+    if (target) setSelectedId(target.id)
+    // Instant, not smooth: smooth scrolling from a click handler is not
+    // reliably honoured across browsers when it races a re-render, and a
+    // jump that sometimes silently does nothing is worse than one that isn't animated.
+    evidenceRef.current?.scrollIntoView({ block: 'center' })
+  }
+
   return (
     <main className="page" id="dashboard">
       <header className="page-head">
@@ -148,7 +189,12 @@ export function DashboardPage() {
           <p className="eyebrow">{greeting()} · {studentLabel}</p>
           <h1>Where you stand in <span className="title-subject">{activeCode}</span></h1>
         </div>
-        {subjectCodes.length > 1 && <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={subjectCodes.map((code) => ({ value: code, label: code }))} onChange={setSubjectCode} />}
+        {subjectCodes.length > 1 && (
+          <div className="subject-picker">
+            <Dropdown label="Subject" ariaLabel="Choose subject" icon={BookOpen} value={activeCode} options={subjectCodes.map((code) => ({ value: code, label: code }))} onChange={setSubjectCode} />
+            <p className="kbd-hint"><kbd>←</kbd> <kbd>→</kbd> to switch</p>
+          </div>
+        )}
       </header>
 
       <TodayStrip activeCode={activeCode} onPickSubject={setSubjectCode} />
@@ -184,7 +230,7 @@ export function DashboardPage() {
           </span>
           <span className="stat-label">Assessments analysed · scores in order</span>
         </article>
-        {rows.length > 1 && <TrendChart rows={rows} />}
+        {rows.length > 1 && <TrendChart rows={rows} onSelect={jumpToAssessment} />}
       </section>
 
       <div className="grid2">
@@ -208,12 +254,12 @@ export function DashboardPage() {
                 <button type="button" key={outcome.id} aria-pressed={isSelected} className={isSelected ? 'outcome selected' : 'outcome'} onClick={() => setSelectedId(outcome.id)}>
                   <span className="outcome-name"><strong>{outcome.code}</strong> · {outcome.description}</span>
                   <span className="outcome-pct">{fmt(pct)}% <span className={`chip ${status}`}>{label}</span></span>
-                  <span className="bar"><span className={`bar-fill ${status}`} style={{ width: `${pct}%` }} /></span>
+                  <span className="bar"><span className={`bar-fill ${status}`} style={{ width: revealed ? `${pct}%` : '0%' }} /></span>
                 </button>
               )
             })}
           </div>
-          {selected && <Evidence outcome={selected} rows={tagged(selected)} />}
+          {selected && <div ref={evidenceRef}><Evidence key={selected.id} outcome={selected} rows={tagged(selected)} /></div>}
         </section>
 
         <div className="stack">

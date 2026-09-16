@@ -1,6 +1,7 @@
 import {
   BookOpen,
   BrainCircuit,
+  CalendarDays,
   LayoutDashboard,
   LogOut,
   Sparkles,
@@ -8,10 +9,13 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Avatar } from './Avatar'
+import { MelbourneClock } from './Clock'
 import { ThemeToggle } from './ThemeToggle'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { CalendarPage } from './pages/CalendarPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { InsightPage } from './pages/InsightPage'
+import { PlannerPage } from './pages/PlannerPage'
 import { WhatIfPage } from './pages/WhatIfPage'
 import { QuizzesPage } from './pages/QuizzesPage'
 import { ResourcesPage } from './pages/ResourcesPage'
@@ -19,20 +23,24 @@ import { ResultsOverviewPage } from './pages/ResultsOverviewPage'
 import { StudyPlanPage } from './pages/StudyPlanPage'
 import { StudentProvider, useStudent } from './studentContext'
 import './App.css'
+import './interactive.css'
 
-// Four places to go. Quizzes and Resources are steps of the same journey as
-// the plan (plan → read → test), and What if? is the question that follows
-// "you are 9 marks short" - so they live as sub-tabs, not top-level tabs.
-// On phones the same four render as a bottom tab bar (App.css).
+// Five places to go. Quizzes, Resources and the week planner are steps of the
+// same journey as the plan (plan → schedule → read → test), and What if? is
+// the question that follows "you are 9 marks short" - so they live as
+// sub-tabs, not top-level tabs. On phones the same five render as a bottom
+// tab bar (App.css).
 const navigation = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/' },
   { label: 'Results', icon: TableProperties, to: '/results' },
   { label: 'Study', icon: Sparkles, to: '/study' },
   { label: 'Insight', icon: BrainCircuit, to: '/insight' },
+  { label: 'Calendar', icon: CalendarDays, to: '/calendar' },
 ]
 
 const studyTabs = [
   { label: 'Plan', to: '/study' },
+  { label: 'My week', to: '/study/week' },
   { label: 'Quizzes', to: '/study/quizzes' },
   { label: 'Resources', to: '/study/resources' },
 ]
@@ -66,6 +74,7 @@ function AppShell() {
             <span className="brand-name">Learning Journey Assistant</span>
           </NavLink>
           <div className="topbar-user">
+            <MelbourneClock />
             <span className="student-pill"><Avatar seed={studentLabel} /> {studentLabel}</span>
             <ThemeToggle />
             {/* Real sign-out: clears the Flask session server-side. */}
@@ -86,10 +95,12 @@ function AppShell() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/results" element={<ResultsOverviewPage />} />
         <Route path="/study" element={<Tabbed tabs={studyTabs} label="Study sections"><StudyPlanPage /></Tabbed>} />
+        <Route path="/study/week" element={<Tabbed tabs={studyTabs} label="Study sections"><PlannerPage /></Tabbed>} />
         <Route path="/study/quizzes" element={<Tabbed tabs={studyTabs} label="Study sections"><QuizzesPage /></Tabbed>} />
         <Route path="/study/resources" element={<Tabbed tabs={studyTabs} label="Study sections"><ResourcesPage /></Tabbed>} />
         <Route path="/insight" element={<Tabbed tabs={insightTabs} label="Insight sections"><InsightPage /></Tabbed>} />
         <Route path="/insight/what-if" element={<Tabbed tabs={insightTabs} label="Insight sections"><WhatIfPage /></Tabbed>} />
+        <Route path="/calendar" element={<CalendarPage />} />
         {/* Old addresses keep working for bookmarks, the docs and the videos. */}
         <Route path="/study-plan" element={<Navigate to="/study" replace />} />
         <Route path="/quizzes" element={<Navigate to="/study/quizzes" replace />} />
