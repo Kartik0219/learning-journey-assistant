@@ -89,6 +89,9 @@ export function PlannerPage() {
           {minutesPlanned > budget && <strong className="delta down"> Over by {Math.round((minutesPlanned - budget) / 60 * 10) / 10} h — drop something or add hours.</strong>}
           {attention.length > 0 && <> This plan gives attention to <strong>{attention.map((o) => o.code).join(', ')}</strong>{attention.length === 1 ? '' : ` (${attention.length} outcomes)`}.</>}
         </p>
+        {minutesPlanned === 0 && candidates.length > 0 && (
+          <p className="empty-note">Nothing planned this week yet. Drag a step from the list below onto a day — or, on a phone, use its <em>Add to…</em> menu.</p>
+        )}
       </section>
 
       <div className="planner-grid">
