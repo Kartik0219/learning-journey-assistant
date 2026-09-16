@@ -122,6 +122,13 @@ from two sources:
    with `best_similarity()` (scikit-learn TF-IDF + cosine), and a clause
    becomes a gap only above `LO_MAPPING_THRESHOLD`.
 
+When `LLM_PROVIDER` and `LLM_API_KEY` are set, untagged results first try
+`src.model.gap_extraction` (IOG-37): the model must return a skill, SILO,
+verbatim source quote, severity and confidence. Quotes that are not in the
+feedback or rubric are rejected, and any provider failure falls back to
+TF-IDF. Tagged 150-student results stay on path 1 — those SILOs are not a
+guess.
+
 Every gap carries the exact text it came from and a confidence. Gaps below
 `CONFIDENCE_REVIEW_THRESHOLD` (0.15) are never shown to a student — that is
 F4's "held back until checked", enforced with a `reviewed` flag that every
