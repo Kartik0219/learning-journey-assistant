@@ -1,5 +1,13 @@
 # Data
 
+## `processed/` (IOG-34)
+
+Structured CSVs generated from the approved 150-student workbook in
+`data/dataset/`: `grades.csv`, `rubric_comments.csv`, and
+`silo_mappings.csv`. They are the inspectable tables IOG-34 asked for —
+same columns the pipeline already uses, written by
+`python -m src.connect.export_processed`. See `data/processed/README.md`.
+
 ## `sample/`
 
 Small, entirely synthetic CSVs (fake subject, fake students, fake grades)

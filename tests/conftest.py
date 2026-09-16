@@ -31,6 +31,12 @@ os.environ["DATABASE_URL"] = "sqlite:///./ljas_test.db"
 for _llm_var in ("LLM_PROVIDER", "LLM_API_KEY", "LLM_MODEL"):
     os.environ[_llm_var] = ""
 
+# Same pattern: a leftover HISTORICAL_DATASET_PATH (from
+# `python -m src.connect.export_processed`, or a local .env) would make
+# Parse use the 150-student workbook instead of data/sample/, and a large
+# slice of the suite would fail for the wrong reason.
+os.environ["HISTORICAL_DATASET_PATH"] = ""
+
 import shutil  # noqa: E402
 from pathlib import Path  # noqa: E402
 
