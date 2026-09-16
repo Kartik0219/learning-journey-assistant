@@ -95,8 +95,9 @@ def test_weak_similarity_leaves_the_gap_unmapped(seeded_db):
         _, similarity = best_similarity(
             gap.source_evidence_text, [o.description for o in outcomes]
         )
-        if similarity >= LO_MAPPING_THRESHOLD:
-            pytest.skip("fixture wording unexpectedly matched a demo SILO")
+        # Fail loudly if this wording starts matching a SILO — a skip would
+        # hide that regression and drop the only weak-link assertion.
+        assert similarity < LO_MAPPING_THRESHOLD
 
         assert map_gap_to_learning_outcome(session, gap) is None
         assert gap.learning_outcome_id is None
@@ -158,10 +159,15 @@ def test_real_workbook_row_extracts_and_maps_silo_tags(clean_db, monkeypatch):
     finally:
         excel_loader._sheets.cache_clear()
 
-    row = results[
+    matched = results[
         (results["student_number"] == "STU0001")
         & (results["assessment_name"] == "CSE1OOF - Test")
-    ].iloc[0]
+    ]
+    assert not matched.empty, (
+        "STU0001 / CSE1OOF - Test is in the approved workbook "
+        f"(names were: {sorted(results['assessment_name'].unique())})"
+    )
+    row = matched.iloc[0]
     assert row["score"] < 80
     assert "SILO1" in row["silo_tags_text"]
 
