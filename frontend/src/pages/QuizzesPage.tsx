@@ -172,8 +172,8 @@ export function QuizzesPage() {
                     <span><strong>You got {gotIt} of {answered}</strong> — {rated.map((t) => `${t.code} ${t.got}/${t.answered}`).join(' · ')}. Saved to your calendar.</span>
                     <div className="quiz-actions">
                       {rated.filter((t) => t.recId !== null).map((t) => (
-                        <button key={t.outcomeId} className="btn ghost" type="button" disabled={Boolean(practised[t.outcomeId])} onClick={() => practise(t.outcomeId, t.recId!)}>
-                          <CheckCircle2 size={14} aria-hidden="true" /> {practised[t.outcomeId] === 'done' ? `${t.code} marked as practised` : practised[t.outcomeId] === 'saving' ? 'Saving…' : `Mark ${t.code} as practised`}
+                        <button key={t.outcomeId} className={practised[t.outcomeId] === 'done' ? 'btn ghost done' : 'btn ghost'} type="button" disabled={Boolean(practised[t.outcomeId])} onClick={() => practise(t.outcomeId, t.recId!)}>
+                          <CheckCircle2 size={14} aria-hidden="true" /> {practised[t.outcomeId] === 'done' ? <>{t.code} boost applied</> : practised[t.outcomeId] === 'saving' ? 'Saving…' : `Mark ${t.code} as practised`}
                         </button>
                       ))}
                     </div>
