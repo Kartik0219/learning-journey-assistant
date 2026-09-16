@@ -103,11 +103,20 @@ class TopicMaterialRecord(BaseModel):
     passage_text: str = Field(min_length=1)
     source_url: str | None = None
     provenance: str = "subject"
+    resource_type: str = "article"
 
     @field_validator("subject_code")
     @classmethod
     def uppercase_code(cls, v: str) -> str:
         return v.strip().upper()
+
+    @field_validator("resource_type")
+    @classmethod
+    def known_resource_type(cls, v: str) -> str:
+        v = (v or "article").strip().lower() or "article"
+        if v not in {"article", "video"}:
+            raise ValueError(f"unknown resource_type: {v!r}")
+        return v
 
     @field_validator("source_url")
     @classmethod

@@ -83,6 +83,7 @@ export interface Material {
   learning_outcome_code: string | null
   source_url: string | null
   provenance: 'subject' | 'curated'
+  resource_type: 'article' | 'video'
   mastery_pct: number | null
 }
 

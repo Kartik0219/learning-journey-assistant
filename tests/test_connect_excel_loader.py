@@ -148,11 +148,12 @@ def test_load_topic_materials_returns_the_curated_resource_list(workbook):
     team's curated open-resource list, every row honestly marked curated."""
     materials = excel_loader.load_topic_materials()
     assert list(materials.columns) == [
-        "subject_code", "silo_code", "title", "passage_text", "source_url", "provenance",
+        "subject_code", "silo_code", "title", "passage_text", "source_url", "provenance", "resource_type",
     ]
     assert len(materials) > 0
     assert set(materials["provenance"]) == {"curated"}
     assert materials["source_url"].str.startswith("https://").all()
+    assert set(materials["resource_type"]) <= {"article", "video"}
 
 
 def test_load_topic_materials_is_empty_when_the_curated_csv_is_absent(workbook, monkeypatch, tmp_path):

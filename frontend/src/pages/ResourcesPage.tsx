@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, PlayCircle } from 'lucide-react'
 import { api, masteryBand, type Material } from '../api'
 import { useStudent } from '../studentContext'
 import { useApi } from '../useApi'
@@ -7,19 +7,22 @@ import { PageError } from './PageError'
 function MaterialCard({ m }: { m: Material }) {
   const band = m.mastery_pct !== null ? masteryBand(m.mastery_pct) : null
   const focus = m.mastery_pct !== null && m.mastery_pct < 65
+  const isVideo = m.resource_type === 'video'
   return (
     <article className={`material resource${focus ? ' focus' : ''}`}>
       <div className="material-head">
         <p className="material-title">
+          {isVideo && <PlayCircle size={14} aria-hidden="true" className="video-icon" />}
           {m.title}
           {m.learning_outcome_code && <span className="silo-tag">{m.learning_outcome_code}</span>}
+          {isVideo && <span className="chip muted">video</span>}
         </p>
         {band && <span className={`chip ${band.status}`}>{m.mastery_pct}% · {band.label}</span>}
       </div>
       <p>{m.passage_text}</p>
       {m.source_url && (
         <a className="material-link" href={m.source_url} target="_blank" rel="noopener noreferrer">
-          Open resource <ExternalLink size={13} aria-hidden="true" />
+          {isVideo ? 'Watch on YouTube' : 'Open resource'} <ExternalLink size={13} aria-hidden="true" />
         </a>
       )}
     </article>

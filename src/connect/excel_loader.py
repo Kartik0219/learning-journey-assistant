@@ -196,7 +196,7 @@ def load_assessment_results() -> pd.DataFrame:
     return df.reindex(columns=columns)
 
 
-_MATERIAL_COLUMNS = ["subject_code", "silo_code", "title", "passage_text", "source_url", "provenance"]
+_MATERIAL_COLUMNS = ["subject_code", "silo_code", "title", "passage_text", "source_url", "provenance", "resource_type"]
 
 # Hand-picked open resources per SILO, kept next to the workbook so the
 # coordinator can edit or replace them without touching code.
@@ -224,4 +224,7 @@ def load_topic_materials() -> pd.DataFrame:
     if "source_url" not in df.columns:
         df["source_url"] = None
     df["source_url"] = df["source_url"].replace("", None)
+    if "resource_type" not in df.columns:
+        df["resource_type"] = "article"
+    df["resource_type"] = df["resource_type"].replace("", "article")
     return df.reindex(columns=_MATERIAL_COLUMNS)
