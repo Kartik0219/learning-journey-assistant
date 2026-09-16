@@ -306,7 +306,9 @@ def analyze_student(
     return parse_diagnostic_json(raw)
 
 
-def _call_anthropic(prompt: str, settings: Settings) -> str:
+def _call_anthropic(
+    prompt: str, settings: Settings, *, system_prompt: str = SYSTEM_PROMPT
+) -> str:
     """Call the Anthropic Messages API with SYSTEM_PROMPT as the system turn.
     The `anthropic` SDK is imported here so it stays an optional dependency."""
     try:
@@ -323,7 +325,7 @@ def _call_anthropic(prompt: str, settings: Settings) -> str:
         message = client.messages.create(
             model=model,
             max_tokens=2048,
-            system=SYSTEM_PROMPT,
+            system=system_prompt,
             messages=[{"role": "user", "content": prompt}],
         )
     except Exception as exc:  # noqa: BLE001 - surface any transport/API error uniformly
@@ -332,7 +334,9 @@ def _call_anthropic(prompt: str, settings: Settings) -> str:
     return "".join(block.text for block in message.content if getattr(block, "type", None) == "text")
 
 
-def _call_gemini(prompt: str, settings: Settings) -> str:
+def _call_gemini(
+    prompt: str, settings: Settings, *, system_prompt: str = SYSTEM_PROMPT
+) -> str:
     """Call the Gemini generateContent REST API with SYSTEM_PROMPT as the
     system instruction.
 
@@ -350,7 +354,7 @@ def _call_gemini(prompt: str, settings: Settings) -> str:
         # Gemini's equivalent of a system turn. Keeping SYSTEM_PROMPT here -
         # rather than prepending it to the user text - preserves the N5
         # separation between instructions and untrusted course content.
-        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "system_instruction": {"parts": [{"text": system_prompt}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
             # gemini-flash-latest now resolves to a *thinking* model (2.5

@@ -53,17 +53,25 @@ can point at and explain, which is exactly what F4 and F6 ask for. If
 the team later gets a real LLM budget, `extract_skill_gaps` is the one
 function to swap - `map_gap_to_learning_outcome`'s similarity approach
 can stay as-is even then, since F5 asks for similarity-based linking
-specifically.
+specifically. That swap is now opt-in: when LLM credentials are set,
+untagged (sample-dataset) results go through
+`src.model.gap_extraction` (structured skill / SILO / source quote /
+severity / confidence; invented quotes rejected). Any provider or schema
+failure falls back to this TF-IDF path. Tagged real-dataset results stay
+on `_extract_from_silo_tags` - those SILOs are institutional ground
+truth, not a guess.
 
 ## N5 (untrusted input)
 
-Feedback and rubric text are untrusted input. This module never
-concatenates that text into an instruction to a model - there is no
-model call at all, only vectorisation and cosine similarity, so there
-is no instruction-following surface for the untrusted text to attack.
-Every extracted gap's source_evidence_text is a verbatim quote of the
-feedback clause it came from - nothing is written into the database
-that wasn't literally present in the input.
+Feedback and rubric text are untrusted input. The TF-IDF path in this
+module never concatenates that text into an instruction to a model -
+only vectorisation and cosine similarity - so there is no
+instruction-following surface for the untrusted text to attack. The
+opt-in LLM path fences the same text as data (see
+`src.model.gap_extraction`) and refuses any quote that was not present
+in the source. Every extracted gap's source_evidence_text is a verbatim
+quote of the feedback, rubric, or SILO tag it came from - nothing is
+written into the database that wasn't literally present in the input.
 """
 
 from __future__ import annotations
@@ -74,8 +82,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy.orm import Session
 
+from src.common.logging_config import get_logger
 from src.connect.excel_loader import parse_silo_tags
 from src.db.models import AssessmentResult, LearningOutcome, RubricCriterion, SkillGap
+
+logger = get_logger(__name__)
 
 # F4: below this confidence a gap is held for review, never shown to a
 # student, per "items with low confidence are held for review and are
@@ -193,9 +204,21 @@ def extract_skill_gaps(session: Session, assessment_result: AssessmentResult) ->
     Dispatches on whether the result carries explicit SILO tags (the
     real dataset, via src.connect.excel_loader) or not (the synthetic
     sample dataset) - see the module docstring's "Two extraction paths".
+    Untagged results try the opt-in LLM extractor first when credentials
+    are configured (IOG-37); any failure falls back to TF-IDF.
     """
     if assessment_result.silo_tags_text:
         return _extract_from_silo_tags(session, assessment_result)
+
+    from src.model.ai_analysis import AIAnalysisError, AIAnalysisUnavailable, is_ai_enabled
+    from src.model.gap_extraction import extract_skill_gaps_via_llm
+
+    if is_ai_enabled():
+        try:
+            return extract_skill_gaps_via_llm(session, assessment_result)
+        except (AIAnalysisUnavailable, AIAnalysisError) as exc:
+            logger.info("LLM gap extraction unavailable (%s); falling back to TF-IDF.", exc)
+
     return _extract_from_feedback_text(session, assessment_result)
 
 
