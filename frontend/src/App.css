@@ -132,6 +132,7 @@
 .material-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; color: var(--brand); font: 600 13px var(--sans); text-decoration: none; }
 .material-link:hover, .material-link:focus-visible { text-decoration: underline; }
 .chip.muted { background: var(--surface-3); color: var(--muted); }
+.video-icon { color: var(--brand); flex-shrink: 0; }
 .curated-note { background: var(--note-bg); border: 1px solid var(--note-line); border-radius: 8px; color: var(--ink); font-size: 13.5px; line-height: 1.5; margin: 0 0 16px; padding: 10px 14px; }
 
 /* Sub-tabs under Study and Insight */
