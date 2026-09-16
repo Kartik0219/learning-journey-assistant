@@ -1,0 +1,14 @@
+subject_code,silo_code,description
+CSE1OOF,SILO1,analysis/design/implementation compared with object-oriented modelling using objects that combine data structure and behaviour
+CSE1OOF,SILO2,abstract data types and encapsulation to localise and minimise change
+CSE1OOF,SILO3,code sharing and reuse through object-oriented techniques to reduce development time
+CSE1OOF,SILO4,object-oriented design and implementation of computer programs for real-life problems
+CSE2ALG,SILO1,overall objectives of Algorithms and Data Structures
+CSE2ALG,SILO2,identifying data structures and searching and sorting algorithms in computing contexts
+CSE2ALG,SILO3,implementing data structures and searching and sorting algorithms in Java
+CSE2ALG,SILO4,comparing algorithms and data structures and applying suitable choices to problems
+CSE2ALG,SILO5,"designing, implementing, and evaluating Java solutions using appropriate performance measures"
+CSE3CAP,SILO3,reporting project outcomes to technical and non-technical audiences and reflecting on feedback
+CSE3CAP,SILO2,industry standard technical solutions in software or cybersecurity practice
+CSE3CAP,SILO4,professional system documentation and advanced technical reporting to industry standards
+CSE3CAP,SILO1,advanced project management during substantive development implementation
