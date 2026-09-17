@@ -1,7 +1,8 @@
 # Environment Setup
 
 Covers N8 ("Supply setup instructions...") and IOG-32 ("Configure
-development environment").
+development environment"). For a beginner-friendly, click-by-click version
+of this same setup, see `docs/RUN_IN_VSCODE.md`.
 
 ## Prerequisites
 
@@ -89,6 +90,11 @@ everything downstream of login (authorization, consent gating) is the
 same real, tested IOG-42 security layer as before. Run the pipeline
 first so there's mastery data to show; re-run it any time to refresh
 scores without restarting the server.
+
+Once signed in, the **Results** tab shows every assessment result as a
+table (Assessment Type, Score, Feedback Comment, SILOs, Weight, Weighted
+Score) — see `docs/USER_GUIDE.md` §3.2 for the student-facing walkthrough
+of this and every other page.
 
 ### Demo accounts
 
